@@ -1,0 +1,196 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Enums ────────────────────────────────────────────────────────────────────
+
+enum Role {
+  player
+  commissioner
+  admin
+}
+
+enum Sport {
+  college
+  nfl
+}
+
+enum SeasonStatus {
+  upcoming
+  active
+  completed
+}
+
+enum WeekStatus {
+  upcoming
+  picks_open
+  locked
+  in_progress
+  completed
+}
+
+enum GameStatus {
+  scheduled
+  in_progress
+  final
+  postponed
+  cancelled
+}
+
+// ─── Models ───────────────────────────────────────────────────────────────────
+
+model User {
+  id                String   @id @default(uuid())
+  email             String   @unique
+  name              String
+  passwordHash      String?  // null when using Google OAuth
+  googleId          String?  @unique
+  role              Role     @default(player)
+  venmoHandle       String?
+  notificationPrefs Json     @default("{}")
+  createdAt         DateTime @default(now())
+
+  invitationsCreated Invitation[]   @relation("CreatedBy")
+  invitationUsed     Invitation?    @relation("UsedBy")
+  picks              Pick[]
+  weeklyResults      WeeklyResult[]
+  seasonStandings    SeasonStanding[]
+}
+
+model Invitation {
+  id        String    @id @default(uuid())
+  code      String    @unique
+  seasonId  String?
+  email     String?   // targeted invite; null = anyone with the code
+  createdBy String
+  usedBy    String?   @unique
+  usedAt    DateTime?
+  expiresAt DateTime?
+  createdAt DateTime  @default(now())
+
+  season  Season? @relation(fields: [seasonId], references: [id])
+  creator User    @relation("CreatedBy", fields: [createdBy], references: [id])
+  user    User?   @relation("UsedBy", fields: [usedBy], references: [id])
+}
+
+model Season {
+  id             String       @id @default(uuid())
+  name           String       // e.g. "2025 Season"
+  year           Int
+  status         SeasonStatus @default(upcoming)
+  entryFee       Decimal      @default(0) @db.Decimal(10, 2)
+  payout1stPct   Decimal      @default(50) @db.Decimal(5, 2)
+  payout2ndPct   Decimal      @default(30) @db.Decimal(5, 2)
+  payout3rdPct   Decimal      @default(20) @db.Decimal(5, 2)
+  createdAt      DateTime     @default(now())
+
+  weeks           Week[]
+  invitations     Invitation[]
+  seasonStandings SeasonStanding[]
+}
+
+model Week {
+  id           String     @id @default(uuid())
+  seasonId     String
+  weekNumber   Int
+  label        String     // e.g. "Week 7", "Bowl Week 1", "CFP Semifinal"
+  pickDeadline DateTime   // hard cutoff — Friday 23:59:59 CT
+  status       WeekStatus @default(upcoming)
+  createdAt    DateTime   @default(now())
+
+  season        Season         @relation(fields: [seasonId], references: [id])
+  games         Game[]
+  picks         Pick[]
+  weeklyResults WeeklyResult[]
+}
+
+model Team {
+  id           String  @id @default(uuid())
+  name         String
+  abbreviation String
+  logoUrl      String?
+  sport        Sport
+  conference   String?
+  espnId       String  @unique
+
+  homeGames Game[] @relation("HomeTeam")
+  awayGames Game[] @relation("AwayTeam")
+  wonGames  Game[] @relation("WinnerTeam")
+  picks     Pick[]
+}
+
+model Game {
+  id           String     @id @default(uuid())
+  weekId       String
+  sport        Sport
+  homeTeamId   String
+  awayTeamId   String
+  gameTime     DateTime
+  status       GameStatus @default(scheduled)
+  homeScore    Int?
+  awayScore    Int?
+  winnerTeamId String?
+  spread       Decimal?   @db.Decimal(5, 1) // display only; positive = home team favored
+  overUnder    Decimal?   @db.Decimal(5, 1) // display only
+  espnGameId   String?    @unique
+  displayOrder Int        @default(0)
+  createdAt    DateTime   @default(now())
+
+  week       Week  @relation(fields: [weekId], references: [id])
+  homeTeam   Team  @relation("HomeTeam", fields: [homeTeamId], references: [id])
+  awayTeam   Team  @relation("AwayTeam", fields: [awayTeamId], references: [id])
+  winnerTeam Team? @relation("WinnerTeam", fields: [winnerTeamId], references: [id])
+  picks      Pick[]
+}
+
+model Pick {
+  id           String   @id @default(uuid())
+  userId       String
+  gameId       String
+  weekId       String
+  pickedTeamId String
+  isCorrect    Boolean? // null until game finalizes
+  submittedAt  DateTime @default(now())
+
+  user       User @relation(fields: [userId], references: [id])
+  game       Game @relation(fields: [gameId], references: [id])
+  week       Week @relation(fields: [weekId], references: [id])
+  pickedTeam Team @relation(fields: [pickedTeamId], references: [id])
+
+  @@unique([userId, gameId]) // one pick per user per game
+}
+
+model WeeklyResult {
+  id           String   @id @default(uuid())
+  userId       String
+  weekId       String
+  correctPicks Int      @default(0)
+  totalPicks   Int      @default(0)
+  rank         Int?     // null until week is finalized
+  payoutAmount Decimal? @db.Decimal(10, 2)
+  isPaid       Boolean  @default(false)
+
+  user User @relation(fields: [userId], references: [id])
+  week Week @relation(fields: [weekId], references: [id])
+
+  @@unique([userId, weekId])
+}
+
+model SeasonStanding {
+  id           String  @id @default(uuid())
+  userId       String
+  seasonId     String
+  totalCorrect Int     @default(0)
+  weeksPlayed  Int     @default(0)
+  totalPayout  Decimal @default(0) @db.Decimal(10, 2)
+
+  user   User   @relation(fields: [userId], references: [id])
+  season Season @relation(fields: [seasonId], references: [id])
+
+  @@unique([userId, seasonId])
+}

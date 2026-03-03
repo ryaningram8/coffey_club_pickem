@@ -1,0 +1,51 @@
+# ─── Environment ──────────────────────────────────────────────────────────────
+.env
+.env.local
+.env.*.local
+
+# ─── Node / Backend ───────────────────────────────────────────────────────────
+node_modules/
+dist/
+*.log
+.npm
+
+# ─── Flutter ──────────────────────────────────────────────────────────────────
+# Build outputs
+**/build/
+**/.dart_tool/
+**/.flutter-plugins
+**/.flutter-plugins-dependencies
+**/.packages
+**/.pub-cache/
+**/.pub/
+**/pubspec.lock
+
+# Generated files (check these in if you want reproducible builds)
+**/*.g.dart
+**/*.freezed.dart
+**/*.mocks.dart
+
+# iOS
+**/ios/Pods/
+**/ios/.symlinks/
+**/ios/Flutter/flutter_export_environment.sh
+
+# Android
+**/android/.gradle/
+**/android/captures/
+**/android/local.properties
+**/android/key.properties
+
+# ─── Docker ───────────────────────────────────────────────────────────────────
+# No Docker ignores at root; backend has its own .dockerignore
+
+# ─── IDE ──────────────────────────────────────────────────────────────────────
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+
+# ─── OS ───────────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db

@@ -1,0 +1,46 @@
+name: coffey_ui
+description: Shared Flutter package for Coffey Club Pickem — BLoCs, models, repositories, screens, widgets, and theme.
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: ^3.11.0
+  flutter: ">=3.10.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # State management
+  flutter_bloc: ^9.1.0
+  bloc: ^9.0.0
+  equatable: ^2.0.5
+
+  # Navigation
+  go_router: ^14.0.0
+
+  # Networking
+  dio: ^5.4.3
+  retrofit: ^4.1.0
+
+  # Models & serialization
+  freezed_annotation: ^2.4.1
+  json_annotation: ^4.9.0
+
+  # Secure token storage
+  flutter_secure_storage: ^9.2.2
+
+  # Firebase
+  firebase_core: ^3.1.0
+  firebase_messaging: ^15.0.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  build_runner: ^2.4.9
+  freezed: ^2.5.2
+  json_serializable: ^6.8.0
+  retrofit_generator: ^8.1.0
+
+flutter:

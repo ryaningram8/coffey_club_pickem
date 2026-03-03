@@ -1,0 +1,27 @@
+name: coffey_mobile
+description: Coffey Club Pickem — Mobile application entrypoint (iOS + Android).
+version: 1.0.0+1
+publish_to: none
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Shared package
+  coffey_ui:
+    path: ../../packages/coffey_ui
+
+  # Firebase (mobile-specific initialization)
+  firebase_core: ^3.1.0
+  firebase_messaging: ^15.0.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true
