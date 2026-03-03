@@ -22,19 +22,19 @@ Status: `[ ]` todo · `[~]` in progress · `[x]` done
 - [x] Seed script: admin user, sample season/week
 
 ### Authentication (Backend)
-- [ ] `POST /auth/signup` — validates invite code, creates user, returns tokens
-- [ ] `POST /auth/login` — email + password, returns tokens
-- [ ] `POST /auth/google` — Google OAuth token exchange
-- [ ] `POST /auth/refresh` — refresh access token
-- [ ] JWT middleware (auth guard for protected routes)
-- [ ] Role-based access middleware (`requireRole`)
+- [x] `POST /auth/signup` — validates invite code, creates user, returns tokens
+- [x] `POST /auth/login` — email + password, returns tokens
+- [x] `POST /auth/google` — Google OAuth token exchange
+- [x] `POST /auth/refresh` — refresh access token
+- [x] JWT middleware (auth guard for protected routes)
+- [x] Role-based access middleware (`requireRole`)
 
 ### Authentication (Flutter)
-- [ ] Auth BLoC (login, signup, logout, token refresh)
-- [ ] Login screen (email/password + Google Sign-In button)
-- [ ] Signup screen (invite code entry → account creation)
-- [ ] Secure token storage (flutter_secure_storage)
-- [ ] Dio interceptor for auth headers + auto token refresh
+- [x] Auth BLoC (login, signup, logout, token refresh)
+- [x] Login screen (email/password + Google Sign-In button)
+- [x] Signup screen (invite code entry → account creation)
+- [x] Secure token storage (flutter_secure_storage)
+- [x] Dio interceptor for auth headers + auto token refresh
 
 ---
 

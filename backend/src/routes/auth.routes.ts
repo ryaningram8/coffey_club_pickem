@@ -1,42 +1,59 @@
-import { FastifyInstance } from 'fastify';
+import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
+import * as authService from '../services/auth.service';
+import { verifyRefreshToken } from '../lib/tokens';
+import { UnauthorizedError } from '../lib/errors';
 
-// Placeholder auth routes — full implementation in Phase 1 auth work.
-// Structure follows: thin route handler → AuthService (business logic).
-
-const signupSchema = z.object({
-  name: z.string().min(1),
+const signupBody = z.object({
+  name: z.string().min(1).max(100),
   email: z.string().email(),
-  password: z.string().min(8).optional(),
-  googleToken: z.string().optional(),
+  password: z.string().min(8),
   inviteCode: z.string().min(1),
 });
 
-const loginSchema = z.object({
+const loginBody = z.object({
   email: z.string().email(),
   password: z.string().min(1),
 });
 
+const googleBody = z.object({
+  googleToken: z.string().min(1),
+  inviteCode: z.string().min(1).optional(),
+});
+
+const refreshBody = z.object({
+  refreshToken: z.string().min(1),
+});
+
 export async function authRoutes(server: FastifyInstance) {
   server.post('/signup', async (request, reply) => {
-    const body = signupSchema.parse(request.body);
-    // TODO: call AuthService.signup(body)
-    return reply.code(201).send({ message: 'signup placeholder', data: body });
+    const body = signupBody.parse(request.body);
+    const result = await authService.signup(body);
+    return reply.code(201).send(result);
   });
 
   server.post('/login', async (request, reply) => {
-    const body = loginSchema.parse(request.body);
-    // TODO: call AuthService.login(body)
-    return reply.code(200).send({ message: 'login placeholder', data: body });
+    const body = loginBody.parse(request.body);
+    const result = await authService.login(body);
+    return reply.code(200).send(result);
   });
 
   server.post('/google', async (request, reply) => {
-    // TODO: call AuthService.googleLogin(googleToken)
-    return reply.code(200).send({ message: 'google login placeholder' });
+    const body = googleBody.parse(request.body);
+    const result = await authService.googleAuth(body);
+    return reply.code(200).send(result);
   });
 
   server.post('/refresh', async (request, reply) => {
-    // TODO: call AuthService.refreshToken(refreshToken from cookie)
-    return reply.code(200).send({ message: 'refresh placeholder' });
+    const { refreshToken } = refreshBody.parse(request.body);
+    let userId: string;
+    try {
+      const payload = verifyRefreshToken(refreshToken);
+      userId = payload.sub;
+    } catch {
+      throw new UnauthorizedError('Invalid or expired refresh token');
+    }
+    const tokens = await authService.refreshTokens(userId);
+    return reply.code(200).send(tokens);
   });
 }

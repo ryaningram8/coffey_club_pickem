@@ -14,9 +14,9 @@ dependencies:
   coffey_ui:
     path: ../../packages/coffey_ui
 
-  # Firebase (web-specific initialization)
-  firebase_core: ^3.1.0
-  firebase_messaging: ^15.0.0
+  # Firebase — added in Phase 4 (push notifications)
+  # firebase_core: ^3.1.0
+  # firebase_messaging: ^15.0.0
 
 dev_dependencies:
   flutter_test:
