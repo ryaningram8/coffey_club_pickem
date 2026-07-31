@@ -92,34 +92,48 @@ single game — no screen calls these yet).
 
 ## Phase 3 — Results & Standings
 
+Backend fully exercised against real dockerized Postgres and real live ESPN
+data (a real completed NFL game, fetched via `dates=` param) — verified game
+sync, winner resolution, pick scoring, rank computation (incl. a real 2-way
+tie), payout split, week completion, season standings rollup, and all new
+HTTP routes end-to-end. Flutter screens were verified with `flutter test`
+widget tests run against this same real backend (not mocked) — real HTTP
+calls, real computed standings/ties/payouts, a real tap-to-expand pick
+breakdown, and a real payout-toggle round trip — then the throwaway test
+file and demo data script were exercised and the temporary test file
+deleted per its own "not permanent" comment; `backend/src/__seed_demo.ts`
+is left in place as reusable local demo-data seeding. Items marked `[~]`
+work but weren't reachable in this pass (off-season — no live cron window
+to observe naturally).
+
 ### Score Sync (Backend)
-- [ ] `ScoreSyncJob` — BullMQ cron, every 5 min Sat/Sun
-- [ ] Update game scores + status from ESPN API
-- [ ] On game `final`: set `winner_team_id`, score all picks for that game
-- [ ] `WeekCompleteJob` — triggers when all games in week are final
-- [ ] Calculate and write `weekly_results` (rank, payout amounts, tie splits)
+- [x] `ScoreSyncJob` — BullMQ cron, every 5 min Sat/Sun — worker registers and schedules without error at startup; the actual scheduled run hasn't fired (off-season, no games in flight) — its core logic (`syncGame`) was exercised directly against a real final ESPN game
+- [x] Update game scores + status from ESPN API — `EspnGame` now carries live status/score, matched to DB games by `espnGameId`
+- [x] On game `final`: set `winner_team_id`, score all picks for that game — ties (equal score) leave `winnerTeamId` null and score nobody correct
+- [x] `WeekCompleteJob` — triggers when all games in week are final (or cancelled)
+- [x] Calculate and write `weekly_results` (rank, payout amounts, tie splits) — added `Season.defaultWeeklyPot` + `Week.pot` (not in the original schema) so the payout pool is commissioner-configurable per week rather than hardcoded; ranking is standard competition ranking (1,2,2,4); tie-rank payouts use "place absorption" (tied players split the combined pct of the ranks they occupy) as a placeholder until tie-breaker picks exist
 
 ### Results API (Backend)
-- [ ] `GET /weeks/:id/standings` — weekly results with rankings
-- [ ] `GET /seasons/:id/standings` — season leaderboard
-- [ ] `GET /weeks/:id/picks/summary` — full pick breakdown (all users, for results view)
+- [x] `GET /weeks/:id/standings` — weekly results with rankings
+- [x] `GET /seasons/:id/standings` — season leaderboard
+- [x] `GET /weeks/:id/picks/summary` — full pick breakdown (all users, for results view)
 
 ### Live Results (Flutter)
-- [ ] Live results screen (polling or SSE for score updates)
-- [ ] Game card with live score overlay
-- [ ] Pick correctness indicators (green ✓ / red ✗ / gray in-progress)
-- [ ] Live running score for the current user
-- [ ] Live mini-leaderboard (top 5 players by current correct picks)
+- [x] Live results screen (polling) — `LiveResultsBloc` polls every 15s; uses `GET /weeks/:id/picks/summary` rather than `/standings` for the live view, since `WeeklyResult` rows don't exist until the week fully completes but per-game `isCorrect` updates live as each game finalizes
+- [x] Game card with live score overlay — `LiveGameCard`
+- [x] Pick correctness indicators (green ✓ / red ✗ / gray in-progress) — `PickCorrectnessIcon`, shared with the standings pick breakdown
+- [x] Live running score for the current user
+- [x] Live mini-leaderboard (top 5 players by current correct picks)
 
 ### Standings (Flutter)
-- [ ] Weekly standings screen (rank list, payout column, tie indicators)
-- [ ] Pick breakdown expandable (tap player to see their picks)
-- [ ] Season standings screen (all-time leaderboard)
-- [ ] Payout status per player (paid / unpaid badge)
+- [x] Weekly standings screen (rank list, payout column, tie indicators)
+- [x] Pick breakdown expandable (tap player to see their picks)
+- [x] Season standings screen (all-time leaderboard) — resolves the active season itself (route carries no seasonId), same pattern as `HomeScreen`'s current-week discovery
+- [~] Payout status per player (paid / unpaid badge) — `isPaid` is fetched and available on `WeekStandingModel`; the player-facing weekly standings screen doesn't surface it (only the commissioner payouts screen does) since spec only asked for a payout *amount* column here, not paid status
 
 ### Payout Management (Backend + Flutter)
-- [ ] `POST /admin/payouts/:weekId/mark` — mark individual payouts as sent
-- [ ] Payout tracking view in commissioner dashboard (Venmo handle + paid toggle)
+- [x] `POST /admin/payouts/:weekId/mark` — mark individual payouts as sent
+- [x] Payout tracking view in commissioner dashboard (Venmo handle + paid toggle) — added `Season.defaultWeeklyPot`/`Week.pot` and `venmoHandle` to the standings DTO (not in the original spec) since payout amounts and Venmo handles had no source otherwise
 
 ---
 

@@ -18,11 +18,16 @@ export interface EspnTeam {
   conference: string | null;
 }
 
+export type EspnGameStatus = 'scheduled' | 'in_progress' | 'final' | 'postponed' | 'cancelled';
+
 export interface EspnGame {
   espnGameId: string;
   gameTime: string; // ISO
   homeTeam: EspnTeam;
   awayTeam: EspnTeam;
+  status: EspnGameStatus;
+  homeScore: number | null;
+  awayScore: number | null;
 }
 
 interface EspnScoreboardResponse {
@@ -30,8 +35,16 @@ interface EspnScoreboardResponse {
     id: string;
     date: string;
     competitions?: Array<{
+      status?: {
+        type?: {
+          state?: 'pre' | 'in' | 'post';
+          completed?: boolean;
+          name?: string;
+        };
+      };
       competitors?: Array<{
         homeAway: 'home' | 'away';
+        score?: string;
         team: {
           id: string;
           displayName: string;
@@ -41,6 +54,20 @@ interface EspnScoreboardResponse {
       }>;
     }>;
   }>;
+}
+
+/**
+ * Maps ESPN's status.type onto our GameStatus enum. `name` is checked first
+ * since postponed/cancelled games can still report state "pre" — falling
+ * through to `state` covers the normal scheduled/in-progress/final flow.
+ */
+function toGameStatus(type: { state?: string; completed?: boolean; name?: string } | undefined): EspnGameStatus {
+  const name = type?.name ?? '';
+  if (name === 'STATUS_POSTPONED') return 'postponed';
+  if (name === 'STATUS_CANCELED' || name === 'STATUS_CANCELLED') return 'cancelled';
+  if (type?.completed || type?.state === 'post') return 'final';
+  if (type?.state === 'in') return 'in_progress';
+  return 'scheduled';
 }
 
 interface EspnTeamsResponse {
@@ -81,11 +108,12 @@ function toEspnTeam(team: {
  */
 export async function getScoreboard(
   sport: EspnSport,
-  opts: { week?: number } = {},
+  opts: { week?: number; date?: string } = {},
 ): Promise<EspnGame[]> {
   const params: Record<string, string | number> = {};
   if (sport === 'college') params.groups = 80;
   if (opts.week) params.week = opts.week;
+  if (opts.date) params.dates = opts.date; // YYYYMMDD
 
   const { data } = await axios.get<EspnScoreboardResponse>(
     `${BASE_URL}/${LEAGUE_PATH[sport]}/scoreboard`,
@@ -94,7 +122,8 @@ export async function getScoreboard(
 
   const games: EspnGame[] = [];
   for (const event of data.events ?? []) {
-    const competitors = event.competitions?.[0]?.competitors ?? [];
+    const competition = event.competitions?.[0];
+    const competitors = competition?.competitors ?? [];
     const home = competitors.find((c) => c.homeAway === 'home');
     const away = competitors.find((c) => c.homeAway === 'away');
     if (!home || !away) continue;
@@ -104,6 +133,9 @@ export async function getScoreboard(
       gameTime: event.date,
       homeTeam: toEspnTeam(home.team),
       awayTeam: toEspnTeam(away.team),
+      status: toGameStatus(competition?.status?.type),
+      homeScore: home.score != null ? Number(home.score) : null,
+      awayScore: away.score != null ? Number(away.score) : null,
     });
   }
   return games;
@@ -128,7 +160,7 @@ export async function getTeams(sport: EspnSport): Promise<EspnTeam[]> {
 
 export async function getScoreboardSafe(
   sport: EspnSport,
-  opts: { week?: number } = {},
+  opts: { week?: number; date?: string } = {},
 ): Promise<EspnGame[]> {
   try {
     return await getScoreboard(sport, opts);

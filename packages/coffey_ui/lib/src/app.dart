@@ -5,8 +5,10 @@ import 'blocs/auth/auth_bloc.dart';
 import 'blocs/theme/theme_cubit.dart';
 import 'repositories/auth_repository.dart';
 import 'repositories/game_repository.dart';
+import 'repositories/payout_repository.dart';
 import 'repositories/pick_repository.dart';
 import 'repositories/season_repository.dart';
+import 'repositories/standings_repository.dart';
 import 'repositories/week_repository.dart';
 import 'router/app_router.dart';
 import 'services/api_client.dart';
@@ -29,6 +31,8 @@ class _CoffeyAppState extends State<CoffeyApp> {
   late final WeekRepository _weekRepository;
   late final GameRepository _gameRepository;
   late final PickRepository _pickRepository;
+  late final StandingsRepository _standingsRepository;
+  late final PayoutRepository _payoutRepository;
   late final AuthBloc _authBloc;
   late final ThemeCubit _themeCubit;
   late final GoRouter _router;
@@ -46,6 +50,8 @@ class _CoffeyAppState extends State<CoffeyApp> {
     _weekRepository = WeekRepository(apiClient: _apiClient);
     _gameRepository = GameRepository(apiClient: _apiClient);
     _pickRepository = PickRepository(apiClient: _apiClient);
+    _standingsRepository = StandingsRepository(apiClient: _apiClient);
+    _payoutRepository = PayoutRepository(apiClient: _apiClient);
     _authBloc = AuthBloc(authRepository: _authRepository)..add(AuthEvent.started());
     _themeCubit = ThemeCubit();
     _router = AppRouter.createRouter(_authBloc);
@@ -66,6 +72,8 @@ class _CoffeyAppState extends State<CoffeyApp> {
         RepositoryProvider.value(value: _weekRepository),
         RepositoryProvider.value(value: _gameRepository),
         RepositoryProvider.value(value: _pickRepository),
+        RepositoryProvider.value(value: _standingsRepository),
+        RepositoryProvider.value(value: _payoutRepository),
       ],
       child: MultiBlocProvider(
         providers: [

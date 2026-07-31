@@ -7,9 +7,13 @@ import '../screens/auth/signup_screen.dart';
 import '../screens/commissioner/commissioner_home_screen.dart';
 import '../screens/commissioner/commissioner_week_screen.dart';
 import '../screens/commissioner/game_browser_screen.dart';
+import '../screens/commissioner/payouts_screen.dart';
 import '../screens/home/home_screen.dart';
 import '../screens/picks/pick_sheet_screen.dart';
+import '../screens/results/live_results_screen.dart';
 import '../screens/settings/settings_screen.dart';
+import '../screens/standings/season_standings_screen.dart';
+import '../screens/standings/weekly_standings_screen.dart';
 import 'app_routes.dart';
 
 class AppRouter {
@@ -55,6 +59,25 @@ class AppRouter {
           name: 'settings',
           builder: (context, state) => const SettingsScreen(),
         ),
+        GoRoute(
+          path: AppRoutes.liveResults,
+          name: 'liveResults',
+          builder: (context, state) => LiveResultsScreen(
+            weekId: state.pathParameters['weekId']!,
+          ),
+        ),
+        GoRoute(
+          path: AppRoutes.weeklyStandings,
+          name: 'weeklyStandings',
+          builder: (context, state) => WeeklyStandingsScreen(
+            weekId: state.pathParameters['weekId']!,
+          ),
+        ),
+        GoRoute(
+          path: AppRoutes.seasonStandings,
+          name: 'seasonStandings',
+          builder: (context, state) => const SeasonStandingsScreen(),
+        ),
 
         // Commissioner
         GoRoute(
@@ -76,8 +99,15 @@ class AppRouter {
             weekId: state.pathParameters['weekId']!,
           ),
         ),
+        GoRoute(
+          path: AppRoutes.commissionerPayouts,
+          name: 'commissionerPayouts',
+          builder: (context, state) => PayoutsScreen(
+            weekId: state.pathParameters['weekId']!,
+          ),
+        ),
 
-        // TODO: Add remaining routes as screens are built (Phase 3+)
+        // TODO: Add remaining routes as screens are built (Phase 4)
       ],
     );
   }

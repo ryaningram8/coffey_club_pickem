@@ -36,6 +36,7 @@ export interface WeekDto {
   label: string;
   pickDeadline: string;
   status: WeekStatus;
+  pot: string | null;
   games: GameDto[];
 }
 
@@ -46,6 +47,7 @@ export interface WeekSummaryDto {
   label: string;
   pickDeadline: string;
   status: WeekStatus;
+  pot: string | null;
   gameCount: number;
 }
 
@@ -108,6 +110,7 @@ function toWeekDto(week: WeekWithGames): WeekDto {
     label: week.label,
     pickDeadline: week.pickDeadline.toISOString(),
     status: week.status,
+    pot: week.pot?.toString() ?? null,
     games: week.games.map(toGameDto),
   };
 }
@@ -120,6 +123,7 @@ export function toWeekSummaryDto(week: Week & { games: { id: string }[] }): Week
     label: week.label,
     pickDeadline: week.pickDeadline.toISOString(),
     status: week.status,
+    pot: week.pot?.toString() ?? null,
     gameCount: week.games.length,
   };
 }
@@ -138,7 +142,7 @@ export async function createWeek(
   if (!season) throw new NotFoundError('Season');
 
   const week = await prisma.week.create({
-    data: { seasonId, ...input },
+    data: { seasonId, ...input, pot: season.defaultWeeklyPot },
     include: gamesInclude,
   });
   return toWeekSummaryDto(week);
@@ -146,7 +150,7 @@ export async function createWeek(
 
 export async function updateWeek(
   weekId: string,
-  input: Partial<{ label: string; pickDeadline: Date; status: WeekStatus }>,
+  input: Partial<{ label: string; pickDeadline: Date; status: WeekStatus; pot: number | null }>,
 ): Promise<WeekDto> {
   const existing = await prisma.week.findUnique({ where: { id: weekId } });
   if (!existing) throw new NotFoundError('Week');

@@ -41,9 +41,27 @@ class HomeScreen extends StatelessWidget {
                   const SizedBox(height: 24),
                 ],
                 FilledButton.icon(
-                  onPressed: () => _openCurrentWeek(context),
+                  onPressed: () => _openCurrentWeek(context, 'pickSheet'),
                   icon: const Icon(Icons.checklist),
                   label: const Text("This Week's Picks"),
+                ),
+                const SizedBox(height: 12),
+                OutlinedButton.icon(
+                  onPressed: () => _openCurrentWeek(context, 'liveResults'),
+                  icon: const Icon(Icons.live_tv_outlined),
+                  label: const Text('Live Results'),
+                ),
+                const SizedBox(height: 12),
+                OutlinedButton.icon(
+                  onPressed: () => _openCurrentWeek(context, 'weeklyStandings'),
+                  icon: const Icon(Icons.leaderboard_outlined),
+                  label: const Text('Weekly Standings'),
+                ),
+                const SizedBox(height: 12),
+                OutlinedButton.icon(
+                  onPressed: () => context.pushNamed('seasonStandings'),
+                  icon: const Icon(Icons.emoji_events_outlined),
+                  label: const Text('Season Standings'),
                 ),
                 if (isCommissioner) ...[
                   const SizedBox(height: 12),
@@ -61,7 +79,7 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Future<void> _openCurrentWeek(BuildContext context) async {
+  Future<void> _openCurrentWeek(BuildContext context, String routeName) async {
     final weekRepository = context.read<WeekRepository>();
     final messenger = ScaffoldMessenger.of(context);
     try {
@@ -71,7 +89,7 @@ class HomeScreen extends StatelessWidget {
         return;
       }
       if (!context.mounted) return;
-      context.pushNamed('pickSheet', pathParameters: {'weekId': week.id});
+      context.pushNamed(routeName, pathParameters: {'weekId': week.id});
     } catch (e) {
       messenger.showSnackBar(SnackBar(content: Text('Could not load current week: $e')));
     }

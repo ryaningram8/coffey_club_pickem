@@ -13,6 +13,7 @@ abstract class WeekModel with _$WeekModel {
     required String label,
     required DateTime pickDeadline,
     required String status,
+    String? pot,
     @Default(<GameModel>[]) List<GameModel> games,
   }) = _WeekModel;
 

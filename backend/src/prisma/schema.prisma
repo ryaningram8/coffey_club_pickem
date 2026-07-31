@@ -87,6 +87,7 @@ model Season {
   payout1stPct   Decimal      @default(50) @db.Decimal(5, 2)
   payout2ndPct   Decimal      @default(30) @db.Decimal(5, 2)
   payout3rdPct   Decimal      @default(20) @db.Decimal(5, 2)
+  defaultWeeklyPot Decimal?   @db.Decimal(10, 2) // seeds Week.pot on creation; edit per-week after that
   createdAt      DateTime     @default(now())
 
   weeks           Week[]
@@ -101,6 +102,7 @@ model Week {
   label        String     // e.g. "Week 7", "Bowl Week 1", "CFP Semifinal"
   pickDeadline DateTime   // hard cutoff — Friday 23:59:59 CT
   status       WeekStatus @default(upcoming)
+  pot          Decimal?   @db.Decimal(10, 2) // this week's payout pool; split across top 3 by season payoutXPct
   createdAt    DateTime   @default(now())
 
   season        Season         @relation(fields: [seasonId], references: [id])

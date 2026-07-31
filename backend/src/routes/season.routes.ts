@@ -13,6 +13,17 @@ const createSeasonBody = z.object({
   payout1stPct: z.number().nonnegative().optional(),
   payout2ndPct: z.number().nonnegative().optional(),
   payout3rdPct: z.number().nonnegative().optional(),
+  defaultWeeklyPot: z.number().nonnegative().optional(),
+});
+
+const updateSeasonBody = z.object({
+  name: z.string().min(1).max(100).optional(),
+  status: z.enum(['upcoming', 'active', 'completed']).optional(),
+  entryFee: z.number().nonnegative().optional(),
+  payout1stPct: z.number().nonnegative().optional(),
+  payout2ndPct: z.number().nonnegative().optional(),
+  payout3rdPct: z.number().nonnegative().optional(),
+  defaultWeeklyPot: z.number().nonnegative().nullable().optional(),
 });
 
 const createWeekBody = z.object({
@@ -41,6 +52,16 @@ export async function seasonRoutes(server: FastifyInstance) {
     const season = await seasonService.createSeason(body);
     return reply.code(201).send(season);
   });
+
+  server.put(
+    '/:id',
+    { preHandler: requireRole('commissioner', 'admin') },
+    async (request) => {
+      const { id } = idParams.parse(request.params);
+      const body = updateSeasonBody.parse(request.body);
+      return seasonService.updateSeason(id, body);
+    },
+  );
 
   server.post(
     '/:id/weeks',

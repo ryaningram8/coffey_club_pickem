@@ -1,7 +1,8 @@
 import { Worker } from 'bullmq';
 import { getRedisConnectionOptions } from '../lib/redis';
-import { QUEUE_NAMES, oddsRefreshQueue } from '../lib/queues';
+import { QUEUE_NAMES, oddsRefreshQueue, scoreSyncQueue } from '../lib/queues';
 import { OddsRefreshJob } from './odds-refresh.job';
+import { ScoreSyncJob } from './score-sync.job';
 import { logger } from '../lib/logger';
 
 /**
@@ -31,5 +32,29 @@ export function registerJobs(): void {
     )
     .catch((err) => {
       logger.error({ err }, 'Failed to schedule odds-refresh job');
+    });
+
+  const scoreSyncWorker = new Worker(
+    QUEUE_NAMES.scoreSync,
+    async () => {
+      await new ScoreSyncJob().process();
+    },
+    { connection: getRedisConnectionOptions() },
+  );
+  scoreSyncWorker.on('failed', (job, err) => {
+    logger.error({ err, jobId: job?.id }, 'score-sync job failed');
+  });
+
+  scoreSyncQueue
+    .add(
+      'sync',
+      {},
+      {
+        repeat: { pattern: '*/5 * * * 6,0' }, // every 5 min Sat & Sun
+        jobId: 'score-sync-scheduled',
+      },
+    )
+    .catch((err) => {
+      logger.error({ err }, 'Failed to schedule score-sync job');
     });
 }

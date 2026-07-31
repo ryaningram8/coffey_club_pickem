@@ -28,7 +28,19 @@ class _CommissionerWeekScreenState extends State<CommissionerWeekScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Week Detail')),
+      appBar: AppBar(
+        title: const Text('Week Detail'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.payments_outlined),
+            tooltip: 'Payouts',
+            onPressed: () => context.pushNamed(
+              'commissionerPayouts',
+              pathParameters: {'weekId': widget.weekId},
+            ),
+          ),
+        ],
+      ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => context.pushNamed(
           'commissionerGames',

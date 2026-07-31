@@ -12,6 +12,7 @@ export interface SeasonDto {
   payout1stPct: string;
   payout2ndPct: string;
   payout3rdPct: string;
+  defaultWeeklyPot: string | null;
 }
 
 function toSeasonDto(season: Season): SeasonDto {
@@ -24,6 +25,7 @@ function toSeasonDto(season: Season): SeasonDto {
     payout1stPct: season.payout1stPct.toString(),
     payout2ndPct: season.payout2ndPct.toString(),
     payout3rdPct: season.payout3rdPct.toString(),
+    defaultWeeklyPot: season.defaultWeeklyPot?.toString() ?? null,
   };
 }
 
@@ -68,6 +70,7 @@ export async function createSeason(input: {
   payout1stPct?: number;
   payout2ndPct?: number;
   payout3rdPct?: number;
+  defaultWeeklyPot?: number;
 }): Promise<SeasonDto> {
   const season = await prisma.season.create({
     data: {
@@ -77,7 +80,27 @@ export async function createSeason(input: {
       payout1stPct: input.payout1stPct ?? 50,
       payout2ndPct: input.payout2ndPct ?? 30,
       payout3rdPct: input.payout3rdPct ?? 20,
+      defaultWeeklyPot: input.defaultWeeklyPot ?? null,
     },
   });
+  return toSeasonDto(season);
+}
+
+export async function updateSeason(
+  seasonId: string,
+  input: Partial<{
+    name: string;
+    status: SeasonStatus;
+    entryFee: number;
+    payout1stPct: number;
+    payout2ndPct: number;
+    payout3rdPct: number;
+    defaultWeeklyPot: number | null;
+  }>,
+): Promise<SeasonDto> {
+  const existing = await prisma.season.findUnique({ where: { id: seasonId } });
+  if (!existing) throw new NotFoundError('Season');
+
+  const season = await prisma.season.update({ where: { id: seasonId }, data: input });
   return toSeasonDto(season);
 }

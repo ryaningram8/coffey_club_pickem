@@ -9,6 +9,7 @@ const updateWeekBody = z.object({
   label: z.string().min(1).max(100).optional(),
   pickDeadline: z.string().datetime().optional(),
   status: z.enum(['upcoming', 'picks_open', 'locked', 'in_progress', 'completed']).optional(),
+  pot: z.number().nonnegative().nullable().optional(),
 });
 
 const assignGameTeam = z.object({
