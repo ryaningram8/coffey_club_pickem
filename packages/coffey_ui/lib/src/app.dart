@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'blocs/auth/auth_bloc.dart';
+import 'blocs/theme/theme_cubit.dart';
 import 'repositories/auth_repository.dart';
 import 'repositories/game_repository.dart';
 import 'repositories/pick_repository.dart';
@@ -29,6 +30,7 @@ class _CoffeyAppState extends State<CoffeyApp> {
   late final GameRepository _gameRepository;
   late final PickRepository _pickRepository;
   late final AuthBloc _authBloc;
+  late final ThemeCubit _themeCubit;
   late final GoRouter _router;
 
   @override
@@ -45,12 +47,14 @@ class _CoffeyAppState extends State<CoffeyApp> {
     _gameRepository = GameRepository(apiClient: _apiClient);
     _pickRepository = PickRepository(apiClient: _apiClient);
     _authBloc = AuthBloc(authRepository: _authRepository)..add(AuthEvent.started());
+    _themeCubit = ThemeCubit();
     _router = AppRouter.createRouter(_authBloc);
   }
 
   @override
   void dispose() {
     _authBloc.close();
+    _themeCubit.close();
     super.dispose();
   }
 
@@ -63,15 +67,22 @@ class _CoffeyAppState extends State<CoffeyApp> {
         RepositoryProvider.value(value: _gameRepository),
         RepositoryProvider.value(value: _pickRepository),
       ],
-      child: BlocProvider.value(
-        value: _authBloc,
-        child: MaterialApp.router(
-          title: 'Coffey Club Pickem',
-          theme: AppTheme.light(),
-          darkTheme: AppTheme.dark(),
-          themeMode: ThemeMode.system,
-          routerConfig: _router,
-          debugShowCheckedModeBanner: false,
+      child: MultiBlocProvider(
+        providers: [
+          BlocProvider.value(value: _authBloc),
+          BlocProvider.value(value: _themeCubit),
+        ],
+        child: BlocBuilder<ThemeCubit, ThemeMode>(
+          builder: (context, themeMode) {
+            return MaterialApp.router(
+              title: 'Coffey Club Pickem',
+              theme: AppTheme.light(),
+              darkTheme: AppTheme.dark(),
+              themeMode: themeMode,
+              routerConfig: _router,
+              debugShowCheckedModeBanner: false,
+            );
+          },
         ),
       ),
     );

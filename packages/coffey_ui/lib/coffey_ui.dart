@@ -35,6 +35,7 @@ export 'src/blocs/auth/auth_bloc.dart';
 export 'src/blocs/commissioner/commissioner_bloc.dart';
 export 'src/blocs/game_selection/game_selection_bloc.dart';
 export 'src/blocs/picks/picks_bloc.dart';
+export 'src/blocs/theme/theme_cubit.dart';
 
 // Repositories
 export 'src/repositories/auth_repository.dart';
@@ -51,6 +52,7 @@ export 'src/screens/commissioner/commissioner_home_screen.dart';
 export 'src/screens/commissioner/commissioner_week_screen.dart';
 export 'src/screens/commissioner/game_browser_screen.dart';
 export 'src/screens/picks/pick_sheet_screen.dart';
+export 'src/screens/settings/settings_screen.dart';
 
 // Widgets
 export 'src/widgets/pick_game_card.dart';

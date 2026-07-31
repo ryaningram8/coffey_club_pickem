@@ -9,6 +9,7 @@ import '../screens/commissioner/commissioner_week_screen.dart';
 import '../screens/commissioner/game_browser_screen.dart';
 import '../screens/home/home_screen.dart';
 import '../screens/picks/pick_sheet_screen.dart';
+import '../screens/settings/settings_screen.dart';
 import 'app_routes.dart';
 
 class AppRouter {
@@ -48,6 +49,11 @@ class AppRouter {
           builder: (context, state) => PickSheetScreen(
             weekId: state.pathParameters['weekId']!,
           ),
+        ),
+        GoRoute(
+          path: AppRoutes.settings,
+          name: 'settings',
+          builder: (context, state) => const SettingsScreen(),
         ),
 
         // Commissioner

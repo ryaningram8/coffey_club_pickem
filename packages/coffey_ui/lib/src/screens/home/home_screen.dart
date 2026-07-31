@@ -18,6 +18,11 @@ class HomeScreen extends StatelessWidget {
         title: const Text('Coffey Club Pickem'),
         actions: [
           IconButton(
+            icon: const Icon(Icons.settings_outlined),
+            tooltip: 'Settings',
+            onPressed: () => context.pushNamed('settings'),
+          ),
+          IconButton(
             icon: const Icon(Icons.logout),
             tooltip: 'Log out',
             onPressed: () => context.read<AuthBloc>().add(const AuthEvent.logoutRequested()),

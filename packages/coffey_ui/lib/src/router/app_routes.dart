@@ -13,6 +13,7 @@ class AppRoutes {
   static const String weeklyStandings = '/week/:weekId/standings';
   static const String seasonStandings = '/standings';
   static const String profile = '/profile';
+  static const String settings = '/settings';
 
   // Commissioner
   static const String commissioner = '/commissioner';
