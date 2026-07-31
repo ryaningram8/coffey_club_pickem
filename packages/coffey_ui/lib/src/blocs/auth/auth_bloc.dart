@@ -1,14 +1,16 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:freezed_annotation/freezed_annotation.dart';
 import '../../models/user_model.dart';
 import '../../repositories/auth_repository.dart';
 
+part 'auth_bloc.freezed.dart';
 part 'auth_event.dart';
 part 'auth_state.dart';
 
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
   AuthBloc({required AuthRepository authRepository})
       : _authRepository = authRepository,
-        super(AuthInitial()) {
+        super(const AuthState.initial()) {
     on<AuthStarted>(_onStarted);
     on<AuthLoginRequested>(_onLoginRequested);
     on<AuthSignupRequested>(_onSignupRequested);
@@ -19,16 +21,12 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final AuthRepository _authRepository;
 
   Future<void> _onStarted(AuthStarted event, Emitter<AuthState> emit) async {
-    emit(AuthLoading());
+    emit(const AuthState.loading());
     try {
       final user = await _authRepository.getStoredUser();
-      if (user != null) {
-        emit(AuthAuthenticated(user));
-      } else {
-        emit(AuthUnauthenticated());
-      }
+      emit(user != null ? AuthState.authenticated(user) : const AuthState.unauthenticated());
     } catch (_) {
-      emit(AuthUnauthenticated());
+      emit(const AuthState.unauthenticated());
     }
   }
 
@@ -36,15 +34,15 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     AuthLoginRequested event,
     Emitter<AuthState> emit,
   ) async {
-    emit(AuthLoading());
+    emit(const AuthState.loading());
     try {
       final user = await _authRepository.login(
         email: event.email,
         password: event.password,
       );
-      emit(AuthAuthenticated(user));
+      emit(AuthState.authenticated(user));
     } catch (e) {
-      emit(AuthFailure(e.toString()));
+      emit(AuthState.failure(e.toString()));
     }
   }
 
@@ -52,7 +50,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     AuthSignupRequested event,
     Emitter<AuthState> emit,
   ) async {
-    emit(AuthLoading());
+    emit(const AuthState.loading());
     try {
       final user = await _authRepository.signup(
         name: event.name,
@@ -60,9 +58,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         password: event.password,
         inviteCode: event.inviteCode,
       );
-      emit(AuthAuthenticated(user));
+      emit(AuthState.authenticated(user));
     } catch (e) {
-      emit(AuthFailure(e.toString()));
+      emit(AuthState.failure(e.toString()));
     }
   }
 
@@ -70,12 +68,12 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     AuthGoogleLoginRequested event,
     Emitter<AuthState> emit,
   ) async {
-    emit(AuthLoading());
+    emit(const AuthState.loading());
     try {
       final user = await _authRepository.googleLogin();
-      emit(AuthAuthenticated(user));
+      emit(AuthState.authenticated(user));
     } catch (e) {
-      emit(AuthFailure(e.toString()));
+      emit(AuthState.failure(e.toString()));
     }
   }
 
@@ -84,6 +82,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     Emitter<AuthState> emit,
   ) async {
     await _authRepository.logout();
-    emit(AuthUnauthenticated());
+    emit(const AuthState.unauthenticated());
   }
 }

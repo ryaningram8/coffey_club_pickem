@@ -11,6 +11,7 @@ class ApiException implements Exception {
 
   bool get isUnauthorized => statusCode == 401;
   bool get isConflict => statusCode == 409;
+  bool get isNotFound => statusCode == 404;
 
   @override
   String toString() => 'ApiException($statusCode, $code): $message';

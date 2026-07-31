@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "coffey-web",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": ["-c", "export PATH=\"$HOME/development/sdks/flutter/bin:$PATH\"; cd apps/web && flutter run -d web-server --web-port=8765 --web-hostname=0.0.0.0 --dart-define=API_URL=http://localhost:4000"],
+      "port": 8765
+    }
+  ]
+}

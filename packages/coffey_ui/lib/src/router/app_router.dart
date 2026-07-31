@@ -4,7 +4,11 @@ import 'package:go_router/go_router.dart';
 import '../blocs/auth/auth_bloc.dart';
 import '../screens/auth/login_screen.dart';
 import '../screens/auth/signup_screen.dart';
+import '../screens/commissioner/commissioner_home_screen.dart';
+import '../screens/commissioner/commissioner_week_screen.dart';
+import '../screens/commissioner/game_browser_screen.dart';
 import '../screens/home/home_screen.dart';
+import '../screens/picks/pick_sheet_screen.dart';
 import 'app_routes.dart';
 
 class AppRouter {
@@ -38,8 +42,36 @@ class AppRouter {
           name: 'home',
           builder: (context, state) => const HomeScreen(),
         ),
+        GoRoute(
+          path: AppRoutes.pickSheet,
+          name: 'pickSheet',
+          builder: (context, state) => PickSheetScreen(
+            weekId: state.pathParameters['weekId']!,
+          ),
+        ),
 
-        // TODO: Add remaining routes as screens are built (Phase 2+)
+        // Commissioner
+        GoRoute(
+          path: AppRoutes.commissioner,
+          name: 'commissioner',
+          builder: (context, state) => const CommissionerHomeScreen(),
+        ),
+        GoRoute(
+          path: AppRoutes.commissionerWeek,
+          name: 'commissionerWeek',
+          builder: (context, state) => CommissionerWeekScreen(
+            weekId: state.pathParameters['weekId']!,
+          ),
+        ),
+        GoRoute(
+          path: AppRoutes.commissionerGames,
+          name: 'commissionerGames',
+          builder: (context, state) => GameBrowserScreen(
+            weekId: state.pathParameters['weekId']!,
+          ),
+        ),
+
+        // TODO: Add remaining routes as screens are built (Phase 3+)
       ],
     );
   }

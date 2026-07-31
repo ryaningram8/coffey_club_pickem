@@ -1,0 +1,72 @@
+import type { FastifyInstance } from 'fastify';
+import { z } from 'zod';
+import * as weekService from '../services/week.service';
+import { authenticate, requireRole } from '../lib/middleware';
+
+const idParams = z.object({ id: z.string().min(1) });
+
+const updateWeekBody = z.object({
+  label: z.string().min(1).max(100).optional(),
+  pickDeadline: z.string().datetime().optional(),
+  status: z.enum(['upcoming', 'picks_open', 'locked', 'in_progress', 'completed']).optional(),
+});
+
+const assignGameTeam = z.object({
+  espnId: z.string().min(1),
+  name: z.string().min(1),
+  abbreviation: z.string().min(1),
+  logoUrl: z.string().nullable().optional(),
+});
+
+const assignGamesBody = z.object({
+  games: z
+    .array(
+      z.object({
+        espnGameId: z.string().min(1),
+        sport: z.enum(['college', 'nfl']),
+        gameTime: z.string().datetime(),
+        homeTeam: assignGameTeam,
+        awayTeam: assignGameTeam,
+        spread: z.number().nullable().optional(),
+        overUnder: z.number().nullable().optional(),
+      }),
+    )
+    .min(1),
+});
+
+export async function weekRoutes(server: FastifyInstance) {
+  server.get('/current', { preHandler: authenticate }, async () => {
+    return weekService.getCurrentWeek();
+  });
+
+  server.get('/:id', { preHandler: authenticate }, async (request) => {
+    const { id } = idParams.parse(request.params);
+    return weekService.getWeekWithGames(id);
+  });
+
+  server.put(
+    '/:id',
+    { preHandler: requireRole('commissioner', 'admin') },
+    async (request) => {
+      const { id } = idParams.parse(request.params);
+      const body = updateWeekBody.parse(request.body);
+      return weekService.updateWeek(id, {
+        ...body,
+        pickDeadline: body.pickDeadline ? new Date(body.pickDeadline) : undefined,
+      });
+    },
+  );
+
+  server.post(
+    '/:id/games',
+    { preHandler: requireRole('commissioner', 'admin') },
+    async (request) => {
+      const { id } = idParams.parse(request.params);
+      const { games } = assignGamesBody.parse(request.body);
+      return weekService.assignGames(
+        id,
+        games.map((g) => ({ ...g, gameTime: new Date(g.gameTime) })),
+      );
+    },
+  );
+}

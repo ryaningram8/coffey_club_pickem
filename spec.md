@@ -18,7 +18,7 @@ Status: `[ ]` todo · `[~]` in progress · `[x]` done
 
 ### Database
 - [x] Write Prisma schema for all core tables
-- [ ] Run initial migration (`npm run db:migrate` after Docker is running)
+- [x] Run initial migration (`npm run db:migrate` after Docker is running)
 - [x] Seed script: admin user, sample season/week
 
 ### Authentication (Backend)
@@ -33,52 +33,60 @@ Status: `[ ]` todo · `[~]` in progress · `[x]` done
 - [x] Auth BLoC (login, signup, logout, token refresh)
 - [x] Login screen (email/password + Google Sign-In button)
 - [x] Signup screen (invite code entry → account creation)
-- [x] Secure token storage (flutter_secure_storage)
+- [x] Secure token storage (flutter_secure_storage on mobile; plain SharedPreferences on web — see `token_storage.dart`, web's "secure" crypto layer proved unreliable across dev sessions and offers no real benefit there anyway)
 - [x] Dio interceptor for auth headers + auto token refresh
 
 ---
 
 ## Phase 2 — Core Pick Flow
 
+Fully exercised end-to-end in a real browser against a real dockerized
+Postgres/Redis and the live ESPN API: login → commissioner creates a week →
+browses live games → publishes → player views the pick sheet → changes a
+pick → submits. Items still marked `[~]` are implemented but have no UI
+entry point yet or weren't individually exercised (e.g. `PUT`/`DELETE` on a
+single game — no screen calls these yet).
+
 ### Sports Data Services (Backend)
-- [ ] ESPN API client (schedules, live scores, team data)
-- [ ] The Odds API client (spreads, over/under)
-- [ ] `OddsRefreshJob` — BullMQ job, runs Mon–Fri daily
-- [ ] Team seed script (populate teams table from ESPN)
+- [x] ESPN API client (schedules, live scores, team data) — fetched 32 NFL + 200 college teams and live scoreboards from the real API
+- [~] The Odds API client (spreads, over/under) — only the "no API key configured" fail-soft path was exercised; the live-fetch path needs a real key to test
+- [~] `OddsRefreshJob` — BullMQ job, runs Mon–Fri daily — registers and schedules without error at startup; the actual odds-matching run hasn't fired (it's a Mon–Fri cron, not manually triggered)
+- [x] Team seed script (populate teams table from ESPN) — no longer a hard dependency for publishing (see game-selection notes below) but still useful for pre-populating the table; run successfully against live ESPN data
 
 ### Season & Week Management (Backend)
-- [ ] `GET /seasons/:id` — season details
-- [ ] `GET /seasons/:id/weeks` — list all weeks
-- [ ] `POST /seasons` — create season (admin)
-- [ ] `POST /seasons/:id/weeks` — create week (commissioner)
-- [ ] `PUT /weeks/:id` — update week (label, deadline, status)
-- [ ] `GET /weeks/current` — active week for current user
+- [~] `GET /seasons/:id` — season details (no UI calls this by bare id; only `/seasons/active` is used)
+- [x] `GET /seasons/:id/weeks` — list all weeks — powers the Commissioner Dashboard's week list
+- [~] `POST /seasons` — create season (admin) — no UI screen for this yet, API-only
+- [x] `POST /seasons/:id/weeks` — create week (commissioner)
+- [~] `PUT /weeks/:id` — update week (label, deadline, status) — implemented, no UI entry point yet
+- [x] `GET /weeks/current` — active week for current user — powers "This Week's Picks"
+- [x] `GET /seasons/active` — active season for the commissioner dashboard (not in the original spec — added because nothing else let the commissioner UI discover which season to manage)
 
 ### Commissioner — Game Selection (Backend)
-- [ ] `GET /games/available` — fetch upcoming Sat/Sun games from ESPN + odds
-- [ ] `POST /weeks/:id/games` — assign selected 20 games to week
-- [ ] `PUT /games/:id` — update game (replace postponed, edit spread/O/U)
-- [ ] `DELETE /games/:id` — remove game from week (before deadline)
+- [x] `GET /games/available` — fetch upcoming Sat/Sun games from ESPN + odds
+- [x] `POST /weeks/:id/games` — assign selected games to week — upserts teams inline from the request rather than requiring pre-seeding, fixing a real bug where games against non-FBS opponents (not covered by the FBS-only team seed) failed to publish
+- [~] `PUT /games/:id` — update game (replace postponed, edit spread/O/U) — implemented, no UI entry point yet
+- [~] `DELETE /games/:id` — remove game from week (before deadline) — implemented, no UI entry point yet
 
 ### Commissioner Dashboard (Flutter)
-- [ ] Commissioner home screen (week list, status badges)
-- [ ] Game browser screen (searchable list of available games with spread/O/U)
-- [ ] Game selection flow (14 college + 6 NFL, count indicator)
-- [ ] Week publish confirmation
+- [x] Commissioner home screen (week list, status badges)
+- [x] Game browser screen (searchable list of available games with spread/O/U)
+- [x] Game selection flow (14 college + 6 NFL, count indicator)
+- [x] Week publish confirmation
 
 ### Pick Sheet (Backend)
-- [ ] `GET /weeks/:id` — week details with all 20 games
-- [ ] `GET /weeks/:id/picks` — get authenticated user's picks for week
-- [ ] `POST /weeks/:id/picks` — submit/update picks (validates deadline)
+- [x] `GET /weeks/:id` — week details with all 20 games
+- [x] `GET /weeks/:id/picks` — get authenticated user's picks for week
+- [x] `POST /weeks/:id/picks` — submit/update picks (validates deadline — the future-deadline path is exercised; the rejected/expired-deadline path is not)
 
 ### Pick Sheet (Flutter)
-- [ ] Pick sheet screen (20 game cards in scrollable list)
-- [ ] Game card widget (teams, game time, spread, O/U display)
-- [ ] Team selection UI (tap to pick, highlight selected)
-- [ ] Pick count progress indicator (e.g. "14 / 20 picks made")
-- [ ] Submit button (disabled until all 20 picked)
-- [ ] Picks BLoC (load, select, submit, deadline check)
-- [ ] Deep link: `/week/:id` navigates to pick sheet
+- [x] Pick sheet screen (20 game cards in scrollable list)
+- [x] Game card widget (teams, game time, spread, O/U display)
+- [x] Team selection UI (tap to pick, highlight selected)
+- [x] Pick count progress indicator (e.g. "14 / 20 picks made")
+- [x] Submit button (disabled until all picked)
+- [x] Picks BLoC (load, select, submit) — deadline-rejection path not individually exercised
+- [x] Deep link: `/week/:id` navigates to pick sheet
 
 ---
 

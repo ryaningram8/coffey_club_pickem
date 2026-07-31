@@ -1,16 +1,17 @@
+import 'package:freezed_annotation/freezed_annotation.dart';
 import 'auth_tokens_model.dart';
 import 'user_model.dart';
 
-class AuthResponseModel {
-  const AuthResponseModel({required this.tokens, required this.user});
+part 'auth_response_model.freezed.dart';
+part 'auth_response_model.g.dart';
 
-  final AuthTokensModel tokens;
-  final UserModel user;
+@freezed
+abstract class AuthResponseModel with _$AuthResponseModel {
+  const factory AuthResponseModel({
+    required AuthTokensModel tokens,
+    required UserModel user,
+  }) = _AuthResponseModel;
 
-  factory AuthResponseModel.fromJson(Map<String, dynamic> json) {
-    return AuthResponseModel(
-      tokens: AuthTokensModel.fromJson(json['tokens'] as Map<String, dynamic>),
-      user: UserModel.fromJson(json['user'] as Map<String, dynamic>),
-    );
-  }
+  factory AuthResponseModel.fromJson(Map<String, dynamic> json) =>
+      _$AuthResponseModelFromJson(json);
 }

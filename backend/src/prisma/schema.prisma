@@ -116,12 +116,14 @@ model Team {
   logoUrl      String?
   sport        Sport
   conference   String?
-  espnId       String  @unique
+  espnId       String // scoped per sport — ESPN reuses small integer IDs across leagues (e.g. "29" is both an NFL and a college team)
 
   homeGames Game[] @relation("HomeTeam")
   awayGames Game[] @relation("AwayTeam")
   wonGames  Game[] @relation("WinnerTeam")
   picks     Pick[]
+
+  @@unique([sport, espnId])
 }
 
 model Game {

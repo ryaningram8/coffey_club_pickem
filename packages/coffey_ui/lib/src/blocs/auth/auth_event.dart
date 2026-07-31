@@ -1,29 +1,23 @@
 part of 'auth_bloc.dart';
 
-sealed class AuthEvent {}
+@freezed
+class AuthEvent with _$AuthEvent {
+  /// Fired once on app startup to restore session from secure storage.
+  const factory AuthEvent.started() = AuthStarted;
 
-/// Fired once on app startup to restore session from secure storage.
-final class AuthStarted extends AuthEvent {}
+  const factory AuthEvent.loginRequested({
+    required String email,
+    required String password,
+  }) = AuthLoginRequested;
 
-final class AuthLoginRequested extends AuthEvent {
-  AuthLoginRequested({required this.email, required this.password});
-  final String email;
-  final String password;
+  const factory AuthEvent.signupRequested({
+    required String name,
+    required String email,
+    required String password,
+    required String inviteCode,
+  }) = AuthSignupRequested;
+
+  const factory AuthEvent.googleLoginRequested() = AuthGoogleLoginRequested;
+
+  const factory AuthEvent.logoutRequested() = AuthLogoutRequested;
 }
-
-final class AuthSignupRequested extends AuthEvent {
-  AuthSignupRequested({
-    required this.name,
-    required this.email,
-    required this.password,
-    required this.inviteCode,
-  });
-  final String name;
-  final String email;
-  final String password;
-  final String inviteCode;
-}
-
-final class AuthGoogleLoginRequested extends AuthEvent {}
-
-final class AuthLogoutRequested extends AuthEvent {}

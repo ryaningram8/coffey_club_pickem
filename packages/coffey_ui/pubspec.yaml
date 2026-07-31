@@ -24,11 +24,12 @@ dependencies:
   retrofit: ^4.1.0
 
   # Models & serialization
-  freezed_annotation: ^2.4.1
-  json_annotation: ^4.9.0
+  freezed_annotation: ^3.1.0
+  json_annotation: ^4.12.0
 
-  # Secure token storage
+  # Secure token storage (mobile) / plain storage (web — see token_storage.dart)
   flutter_secure_storage: ^9.2.2
+  shared_preferences: ^2.3.2
 
   # Google Sign-In
   google_sign_in: ^6.2.0
@@ -42,8 +43,8 @@ dev_dependencies:
     sdk: flutter
   flutter_lints: ^6.0.0
   build_runner: ^2.4.9
-  freezed: ^2.5.2
+  freezed: ^3.0.0
   json_serializable: ^6.8.0
-  retrofit_generator: ^8.1.0
+  retrofit_generator: ^10.2.8
 
 flutter:

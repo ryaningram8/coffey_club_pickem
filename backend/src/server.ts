@@ -2,10 +2,11 @@ import Fastify, { type FastifyError, type FastifyReply, type FastifyRequest } fr
 import cors from '@fastify/cors';
 import { ZodError } from 'zod';
 import { AppError } from './lib/errors';
-import { logger } from './lib/logger';
+import { fastifyLoggerOptions, logger } from './lib/logger';
 import { registerRoutes } from './routes';
+import { registerJobs } from './jobs/register';
 
-const server = Fastify({ logger });
+const server = Fastify({ logger: fastifyLoggerOptions });
 
 async function start() {
   // Plugins
@@ -27,6 +28,9 @@ async function start() {
 
   // Routes
   await registerRoutes(server);
+
+  // Background jobs (BullMQ workers + repeatable schedules)
+  registerJobs();
 
   // Health check
   server.get('/health', async () => ({ status: 'ok' }));
