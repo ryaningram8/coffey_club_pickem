@@ -139,18 +139,41 @@ to observe naturally).
 
 ## Phase 4 — Notifications & Polish
 
+Backend routes/services/jobs verified live against the real dockerized
+Postgres/Redis (server boots clean, `tsc --strict` build passes): logged in
+as the seeded admin and player, confirmed `GET`/`PUT /users/me/notifications`
+persist across requests, `POST /users/me/fcm-token` stores a token,
+`POST /admin/broadcast` reaches all 5 seeded users and correctly 403s a
+non-commissioner, and the fail-soft path (no `FIREBASE_SERVICE_ACCOUNT_JSON`
+/ `RESEND_API_KEY` configured) logs a warning and no-ops rather than
+crashing — same pattern as `THE_ODDS_API_KEY` in Phase 2. Items marked `[~]`
+are implemented and wired up but not reachable in this pass: no real
+Firebase/Resend project is configured yet (so the actual push/email send
+path is unexercised, only its fail-soft skip path is), and
+`PickReminderJob`/`ResultsNotificationJob` are correctly scheduled by
+`assignGames`/`WeekCompleteJob` but never fired live (no published week with
+a near deadline, no completed week, in this pass — same class of gap as
+Phase 3's cron jobs). Flutter: `flutter analyze` is clean across
+`coffey_ui`/`mobile`/`web` and the app boots in a real browser against the
+real backend with no console errors (Firebase inits without throwing even
+with no project configured), but the notification-prefs screen itself
+wasn't interactively exercised — this session's browser tool couldn't
+render screenshots (confirmed environment-wide, not app-specific, by
+failing identically on a plain static page), so it's marked `[~]` pending a
+manual check.
+
 ### Notifications (Backend)
-- [ ] FCM integration (Firebase Admin SDK)
-- [ ] Email integration (Resend API or Nodemailer + SMTP)
-- [ ] `PickReminderJob` — scheduled when week published; fires at user-configured times
-- [ ] `ResultsNotificationJob` — fires after `WeekCompleteJob`
-- [ ] `POST /admin/broadcast` — commissioner sends manual push/email to all users
-- [ ] `PUT /users/me/notifications` — update user notification preferences
+- [~] FCM integration (Firebase Admin SDK) — `lib/fcm-client.ts`; only the "not configured" fail-soft path was exercised live
+- [~] Email integration (Resend API) — `lib/email-client.ts`; only the "not configured" fail-soft path was exercised live. Chose Resend over Nodemailer+SMTP to match the single-API-key pattern already used for Firebase/Odds
+- [~] `PickReminderJob` — scheduled per-user (own `hoursBeforeDeadline` pref) when a week is published via `assignGames`; registers without error, hasn't fired live
+- [~] `ResultsNotificationJob` — enqueued for every week participant from `WeekCompleteJob` after `finalizeWeek`; registers without error, hasn't fired live
+- [x] `POST /admin/broadcast` — commissioner sends manual push/email to all users
+- [x] `PUT /users/me/notifications` — update user notification preferences — added `GET /users/me/notifications` alongside it (not in the original spec) since the Flutter prefs screen needs to load current state before editing it
 
 ### Notifications (Flutter)
-- [ ] FCM token registration on login
-- [ ] Notification preferences screen (toggles for each alert type + timing)
-- [ ] In-app notification handling (route to correct screen on tap)
+- [~] FCM token registration on login — `PushNotificationService` wired to `AuthBloc`'s authenticated stream; code path is analyzer-clean but unexercised against a real device token (no Firebase project configured)
+- [~] Notification preferences screen (toggles for each alert type + timing) — `NotificationPrefsScreen` + `NotificationPrefsCubit`, reachable from Settings; not interactively verified in-browser this pass (see note above)
+- [~] In-app notification handling (route to correct screen on tap) — `PushNotificationService._handleNotificationTap` routes `pick_reminder`/`results` payloads to the pick sheet / weekly standings; unexercised (no real push received)
 
 ### Invitations (Backend + Flutter)
 - [ ] `POST /invitations` — generate invite code (commissioner/admin)

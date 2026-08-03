@@ -14,6 +14,7 @@ class AppRoutes {
   static const String seasonStandings = '/standings';
   static const String profile = '/profile';
   static const String settings = '/settings';
+  static const String notificationPrefs = '/settings/notifications';
 
   // Commissioner
   static const String commissioner = '/commissioner';

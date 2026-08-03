@@ -4,8 +4,7 @@ import { getRedisConnectionOptions } from './redis';
 export const QUEUE_NAMES = {
   oddsRefresh: 'odds-refresh',
   scoreSync: 'score-sync',
-  // Reserved for Phase 4:
-  // notifications: 'notifications',
+  notifications: 'notifications',
 } as const;
 
 export const oddsRefreshQueue = new Queue(QUEUE_NAMES.oddsRefresh, {
@@ -13,5 +12,9 @@ export const oddsRefreshQueue = new Queue(QUEUE_NAMES.oddsRefresh, {
 });
 
 export const scoreSyncQueue = new Queue(QUEUE_NAMES.scoreSync, {
+  connection: getRedisConnectionOptions(),
+});
+
+export const notificationsQueue = new Queue(QUEUE_NAMES.notifications, {
   connection: getRedisConnectionOptions(),
 });

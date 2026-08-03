@@ -53,6 +53,7 @@ model User {
   role              Role     @default(player)
   venmoHandle       String?
   notificationPrefs Json     @default("{}")
+  fcmTokens         String[] @default([])
   createdAt         DateTime @default(now())
 
   invitationsCreated Invitation[]   @relation("CreatedBy")

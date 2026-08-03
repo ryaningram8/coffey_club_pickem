@@ -11,6 +11,7 @@ import '../screens/commissioner/payouts_screen.dart';
 import '../screens/home/home_screen.dart';
 import '../screens/picks/pick_sheet_screen.dart';
 import '../screens/results/live_results_screen.dart';
+import '../screens/settings/notification_prefs_screen.dart';
 import '../screens/settings/settings_screen.dart';
 import '../screens/standings/season_standings_screen.dart';
 import '../screens/standings/weekly_standings_screen.dart';
@@ -58,6 +59,11 @@ class AppRouter {
           path: AppRoutes.settings,
           name: 'settings',
           builder: (context, state) => const SettingsScreen(),
+        ),
+        GoRoute(
+          path: AppRoutes.notificationPrefs,
+          name: 'notificationPrefs',
+          builder: (context, state) => const NotificationPrefsScreen(),
         ),
         GoRoute(
           path: AppRoutes.liveResults,

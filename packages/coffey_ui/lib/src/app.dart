@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -5,6 +6,7 @@ import 'blocs/auth/auth_bloc.dart';
 import 'blocs/theme/theme_cubit.dart';
 import 'repositories/auth_repository.dart';
 import 'repositories/game_repository.dart';
+import 'repositories/notification_repository.dart';
 import 'repositories/payout_repository.dart';
 import 'repositories/pick_repository.dart';
 import 'repositories/season_repository.dart';
@@ -12,6 +14,7 @@ import 'repositories/standings_repository.dart';
 import 'repositories/week_repository.dart';
 import 'router/app_router.dart';
 import 'services/api_client.dart';
+import 'services/push_notification_service.dart';
 import 'services/token_storage.dart';
 import 'theme/app_theme.dart';
 
@@ -33,9 +36,12 @@ class _CoffeyAppState extends State<CoffeyApp> {
   late final PickRepository _pickRepository;
   late final StandingsRepository _standingsRepository;
   late final PayoutRepository _payoutRepository;
+  late final NotificationRepository _notificationRepository;
+  late final PushNotificationService _pushNotificationService;
   late final AuthBloc _authBloc;
   late final ThemeCubit _themeCubit;
   late final GoRouter _router;
+  StreamSubscription<AuthState>? _pushRegistrationSubscription;
 
   @override
   void initState() {
@@ -52,13 +58,24 @@ class _CoffeyAppState extends State<CoffeyApp> {
     _pickRepository = PickRepository(apiClient: _apiClient);
     _standingsRepository = StandingsRepository(apiClient: _apiClient);
     _payoutRepository = PayoutRepository(apiClient: _apiClient);
+    _notificationRepository = NotificationRepository(apiClient: _apiClient);
+    _pushNotificationService = PushNotificationService(
+      notificationRepository: _notificationRepository,
+    );
     _authBloc = AuthBloc(authRepository: _authRepository)..add(AuthEvent.started());
     _themeCubit = ThemeCubit();
     _router = AppRouter.createRouter(_authBloc);
+
+    _pushRegistrationSubscription = _authBloc.stream.listen((state) {
+      if (state is AuthAuthenticated) {
+        _pushNotificationService.initialize(_router);
+      }
+    });
   }
 
   @override
   void dispose() {
+    _pushRegistrationSubscription?.cancel();
     _authBloc.close();
     _themeCubit.close();
     super.dispose();
@@ -74,6 +91,7 @@ class _CoffeyAppState extends State<CoffeyApp> {
         RepositoryProvider.value(value: _pickRepository),
         RepositoryProvider.value(value: _standingsRepository),
         RepositoryProvider.value(value: _payoutRepository),
+        RepositoryProvider.value(value: _notificationRepository),
       ],
       child: MultiBlocProvider(
         providers: [

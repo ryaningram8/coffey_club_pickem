@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import '../../blocs/theme/theme_cubit.dart';
 
 class SettingsScreen extends StatelessWidget {
@@ -40,6 +41,14 @@ class SettingsScreen extends StatelessWidget {
                 },
               );
             },
+          ),
+          const Divider(height: 32),
+          ListTile(
+            title: const Text('Notifications'),
+            subtitle: const Text('Pick reminders and results alerts'),
+            trailing: const Icon(Icons.chevron_right),
+            contentPadding: EdgeInsets.zero,
+            onTap: () => context.pushNamed('notificationPrefs'),
           ),
         ],
       ),

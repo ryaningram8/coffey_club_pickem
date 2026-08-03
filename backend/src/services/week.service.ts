@@ -1,6 +1,7 @@
 import type { Game, Sport, Team, Week, WeekStatus, GameStatus } from '@prisma/client';
 import { prisma } from '../lib/prisma';
 import { NotFoundError, ValidationError } from '../lib/errors';
+import { schedulePickReminders } from './notification.service';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -269,6 +270,10 @@ export async function assignGames(weekId: string, games: AssignGameInput[]): Pro
       await tx.week.update({ where: { id: weekId }, data: { status: 'picks_open' } });
     }
   });
+
+  if (week.status === 'upcoming') {
+    await schedulePickReminders(weekId, week.pickDeadline);
+  }
 
   return getWeekWithGames(weekId);
 }

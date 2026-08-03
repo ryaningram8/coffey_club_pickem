@@ -3,6 +3,8 @@ import { getRedisConnectionOptions } from '../lib/redis';
 import { QUEUE_NAMES, oddsRefreshQueue, scoreSyncQueue } from '../lib/queues';
 import { OddsRefreshJob } from './odds-refresh.job';
 import { ScoreSyncJob } from './score-sync.job';
+import { PickReminderJob } from './pick-reminder.job';
+import { ResultsNotificationJob } from './results-notification.job';
 import { logger } from '../lib/logger';
 
 /**
@@ -57,4 +59,20 @@ export function registerJobs(): void {
     .catch((err) => {
       logger.error({ err }, 'Failed to schedule score-sync job');
     });
+
+  const notificationsWorker = new Worker(
+    QUEUE_NAMES.notifications,
+    async (job) => {
+      const { userId, weekId } = job.data as { userId: string; weekId: string };
+      if (job.name === 'pick-reminder') {
+        await new PickReminderJob().process(userId, weekId);
+      } else if (job.name === 'results-notification') {
+        await new ResultsNotificationJob().process(userId, weekId);
+      }
+    },
+    { connection: getRedisConnectionOptions() },
+  );
+  notificationsWorker.on('failed', (job, err) => {
+    logger.error({ err, jobId: job?.id, jobName: job?.name }, 'notifications job failed');
+  });
 }
