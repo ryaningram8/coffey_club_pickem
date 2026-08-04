@@ -6,7 +6,7 @@ Nginx is the single entry point for all external traffic in production. It does 
 
 ## How it works
 
-Config: [nginx/nginx.conf](../nginx/nginx.conf). Two `server` blocks:
+Config: [nginx/nginx.conf](../../nginx/nginx.conf). Two `server` blocks:
 
 1. **Port 80** — every request gets a `301` redirect to the `https://` version. Nginx never serves plaintext HTTP content, only the redirect.
 2. **Port 443** — the real server:
@@ -17,7 +17,7 @@ Config: [nginx/nginx.conf](../nginx/nginx.conf). Two `server` blocks:
 
 ## Where it runs
 
-The `nginx` service in [docker-compose.yml](../docker-compose.yml) — official `nginx:alpine` image (no custom Dockerfile needed, just the mounted config + static files). In production this is the container with ports `80`/`443` published to the host, and the Proxmox host's firewall/pfSense forwards external `443` traffic to it.
+The `nginx` service in [docker-compose.yml](../../docker-compose.yml) — official `nginx:alpine` image (no custom Dockerfile needed, just the mounted config + static files). In production this is the container with ports `80`/`443` published to the host, and the Proxmox host's firewall/pfSense forwards external `443` traffic to it.
 
 Not currently running on this dev machine — and it has a real prerequisite that isn't met yet: `apps/web/build/web/` doesn't exist (nobody's run `flutter build web` yet), so even if you started this container today it would 404 on `/`.
 

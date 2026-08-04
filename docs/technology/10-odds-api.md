@@ -8,7 +8,7 @@ It's **cosmetic** in this app, not load-bearing — the pick'em is straight-up w
 
 ## How it works
 
-[backend/src/lib/odds-client.ts](../backend/src/lib/odds-client.ts) exports `getOdds(sport)`. It checks `THE_ODDS_API_KEY` first — if unset, it logs a warning and returns an empty array immediately, no network call at all. If set, it calls `GET /v4/sports/{sport_key}/odds` with `regions=us&markets=spreads,totals&oddsFormat=american`, and maps the first bookmaker's spread/totals markets onto `{ homeTeamName, awayTeamName, commenceTime, spread, overUnder }`. Any request failure (bad key, rate limit, network error) is caught, logged, and also returns an empty array rather than throwing — same fail-soft pattern as the Firebase/Resend clients.
+[backend/src/lib/odds-client.ts](../../backend/src/lib/odds-client.ts) exports `getOdds(sport)`. It checks `THE_ODDS_API_KEY` first — if unset, it logs a warning and returns an empty array immediately, no network call at all. If set, it calls `GET /v4/sports/{sport_key}/odds` with `regions=us&markets=spreads,totals&oddsFormat=american`, and maps the first bookmaker's spread/totals markets onto `{ homeTeamName, awayTeamName, commenceTime, spread, overUnder }`. Any request failure (bad key, rate limit, network error) is caught, logged, and also returns an empty array rather than throwing — same fail-soft pattern as the Firebase/Resend clients.
 
 Consumed by `game.service.ts` when building the commissioner's "available games" list (spreads shown alongside ESPN's schedule data), and by `OddsRefreshJob` (a BullMQ job scheduled 8am Mon–Fri) which periodically refreshes odds for already-selected games. See [05-bullmq-jobs.md](05-bullmq-jobs.md).
 

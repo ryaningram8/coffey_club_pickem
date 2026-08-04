@@ -16,14 +16,15 @@ Running list of things to come back to. Not a plan — just tracking so items do
 
 Real accounts/keys needed — code paths exist and fail soft, but nothing's been exercised against the real service yet.
 
-- [ ] Firebase — no real Firebase project exists yet; create one, wire up `FIREBASE_SERVICE_ACCOUNT_JSON`, and get a real device token + real push delivered end-to-end (see [11-firebase-fcm.md](docs/11-firebase-fcm.md))
-- [ ] The Odds API — no real key plugged in yet; get a key, set `THE_ODDS_API_KEY`, and confirm the response-mapping logic handles real spread data (see [10-odds-api.md](docs/10-odds-api.md))
-- [ ] Resend (email) — no real account exists yet; create one, set `RESEND_API_KEY`, and confirm a real email actually sends (see [12-email-resend.md](docs/12-email-resend.md))
-- [ ] Google OAuth — confirm a real `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` pair is in `.env` (Cloud Console project + OAuth consent screen still need setting up) and exercise sign-in with a real Google account (see [13-google-oauth.md](docs/13-google-oauth.md))
-- [ ] Nginx — needs a real domain in `server_name`, real Let's Encrypt certs, and a Flutter web build to serve; never run end-to-end (see [08-nginx.md](docs/08-nginx.md))
-- [ ] Docker Compose — `api` + `nginx` half of the stack has never been built/run as containers together, only `postgres`+`redis` (see [07-docker-compose.md](docs/07-docker-compose.md))
-- [ ] Proxmox deployment — least-built-out piece overall: no Proxmox VM/container provisioned, no pfSense port-forwarding configured, no certbot cert issued yet (see [14-deployment-proxmox.md](docs/14-deployment-proxmox.md))
-- [ ] Give the dev VM a real subdomain (e.g. `coffeyclub-dev.example.com`) with a real Let's Encrypt cert — needs hostname-aware routing (SNI/Host header) in front too, since pfSense port-forwarding alone can't route two hostnames on the same public IP:443 to different backend VMs
+- [ ] Firebase — no real Firebase project exists yet; create one, wire up `FIREBASE_SERVICE_ACCOUNT_JSON`, and get a real device token + real push delivered end-to-end (see [11-firebase-fcm.md](docs/technology/11-firebase-fcm.md))
+- [ ] The Odds API — no real key plugged in yet; get a key, set `THE_ODDS_API_KEY`, and confirm the response-mapping logic handles real spread data (see [10-odds-api.md](docs/technology/10-odds-api.md))
+- [ ] Resend (email) — no real account exists yet; create one, set `RESEND_API_KEY`, and confirm a real email actually sends (see [12-email-resend.md](docs/technology/12-email-resend.md))
+- [ ] Google OAuth — confirm a real `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` pair is in `.env` (Cloud Console project + OAuth consent screen still need setting up) and exercise sign-in with a real Google account (see [13-google-oauth.md](docs/technology/13-google-oauth.md))
+- [x] Nginx — serving a real Flutter web build and proxying `/api` to the `api` container, verified end-to-end (login works) on the Proxmox dev VM; still using the no-TLS [nginx.dev.conf](nginx/nginx.dev.conf) workaround, real domain + Let's Encrypt cert tracked separately below
+- [x] Docker Compose — all 4 services (`postgres`, `redis`, `api`, `nginx`) now run together and healthy on the Proxmox dev VM; hit two real bugs getting there (Prisma/OpenSSL missing on Alpine, healthcheck's `curl` missing from the production image) — both fixed in [backend/Dockerfile](backend/Dockerfile)
+- [ ] Proxmox deployment — dev VM is now provisioned and running the full stack on the LAN; still missing for a real production deploy: pfSense port-forwarding and a certbot-issued cert (see [14-deployment-proxmox.md](docs/technology/14-deployment-proxmox.md))
+- [ ] Give the dev VM a real subdomain (e.g. `coffeyclub-dev.example.com`) with a real Let's Encrypt cert via **DNS-01** (not HTTP-01) — confirm the DNS provider has a certbot DNS-01 plugin, then also add a pfSense DNS Resolver **Host Override** so the name resolves to the dev VM's internal IP for anything on the LAN. The dev VM is never getting a pfSense port-forward rule — it stays internal-only permanently — so no SNI/hostname routing is needed for this (see [15-networking-basics.md](docs/concepts/15-networking-basics.md))
+- [ ] Future, not needed yet: if a second, unrelated site ever gets hosted from the same home public IP, it'll need a front-door reverse proxy (Nginx Proxy Manager / Traefik / Caddy / HAProxy) in front of pfSense's port-forward to route by hostname (SNI) — only one site is planned for now, so this is deferred by choice, not blocked (see [15-networking-basics.md](docs/concepts/15-networking-basics.md))
 
 ## Clean up
 

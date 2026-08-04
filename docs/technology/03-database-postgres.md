@@ -6,7 +6,7 @@ Postgres is the system of record — every user, pick, game, and result lives he
 
 ## How it works
 
-**Schema**: [backend/src/prisma/schema.prisma](../backend/src/prisma/schema.prisma) — this one file is the entire source of truth for the database structure. Current models:
+**Schema**: [backend/src/prisma/schema.prisma](../../backend/src/prisma/schema.prisma) — this one file is the entire source of truth for the database structure. Current models:
 
 - `User` — email/password or Google OAuth (`passwordHash` is nullable), role (`player`/`commissioner`/`admin`), notification prefs (JSON blob), FCM device tokens (string array)
 - `Invitation` — one-time invite codes, optionally targeted to an email, optionally scoped to a season
@@ -20,15 +20,15 @@ Postgres is the system of record — every user, pick, game, and result lives he
 
 All primary keys are UUIDs (`@default(uuid())`), per CLAUDE.md convention. Enums (`Role`, `Sport`, `WeekStatus`, `GameStatus`, etc.) are Postgres native enums, mapped 1:1 to TypeScript string-literal unions by Prisma.
 
-**Migrations**: every schema change is captured as a numbered SQL file under [backend/src/prisma/migrations/](../backend/src/prisma/migrations/). There are 4 so far: `initial`, `team_espn_id_scoped_by_sport`, `add_weekly_pot_fields`, `add_fcm_tokens`. Running `npm run db:migrate` (`prisma migrate dev`) diffs your edited schema against the migration history, generates a new migration file, and applies it. This is a one-way ratchet in the intended workflow — you edit `schema.prisma`, Prisma writes the SQL, you don't hand-write migration SQL.
+**Migrations**: every schema change is captured as a numbered SQL file under [backend/src/prisma/migrations/](../../backend/src/prisma/migrations/). There are 4 so far: `initial`, `team_espn_id_scoped_by_sport`, `add_weekly_pot_fields`, `add_fcm_tokens`. Running `npm run db:migrate` (`prisma migrate dev`) diffs your edited schema against the migration history, generates a new migration file, and applies it. This is a one-way ratchet in the intended workflow — you edit `schema.prisma`, Prisma writes the SQL, you don't hand-write migration SQL.
 
 ## Where it runs
 
-The `postgres` service in [docker-compose.yml](../docker-compose.yml): `postgres:16-alpine` image, database name `coffey_pickem`, user `coffey`. Data persists in a named Docker volume (`postgres_data`), not in the container itself — the container can be destroyed and recreated without losing data as long as the volume survives.
+The `postgres` service in [docker-compose.yml](../../docker-compose.yml): `postgres:16-alpine` image, database name `coffey_pickem`, user `coffey`. Data persists in a named Docker volume (`postgres_data`), not in the container itself — the container can be destroyed and recreated without losing data as long as the volume survives.
 
 Right now (checked this session) it's running locally on this dev machine, port `5432` exposed to the host (`ports:` in compose has a `# expose for local dev only; remove in prod` comment — production shouldn't expose 5432 to the outside world at all, only the `api` container should reach it, over the internal Docker network).
 
-Connection string lives in `.env` as `DATABASE_URL` — see [backend/.env.example](../backend/.env.example) for the shape.
+Connection string lives in `.env` as `DATABASE_URL` — see [.env.example](../../.env.example) for the shape.
 
 ## How to view it
 

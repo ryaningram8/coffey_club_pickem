@@ -8,7 +8,7 @@ This is where the app gets: the season's game schedule, team names/logos/confere
 
 ## How it works
 
-[backend/src/lib/espn-client.ts](../backend/src/lib/espn-client.ts) wraps two endpoints:
+[backend/src/lib/espn-client.ts](../../backend/src/lib/espn-client.ts) wraps two endpoints:
 
 - `getScoreboard(sport, { week?, date? })` — schedule + live status/score for a sport (`college` or `nfl`). College football is filtered to `groups=80` (FBS only) to keep the game list to relevant teams instead of every Division II/III school. Maps ESPN's status strings (`STATUS_POSTPONED`, `state: 'in'`, `completed: true`, etc.) onto this app's own `GameStatus` enum (`scheduled`/`in_progress`/`final`/`postponed`/`cancelled`).
 - `getTeams(sport)` — full team list (name, abbreviation, logo URL, conference), used to seed the `Team` table.

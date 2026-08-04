@@ -6,7 +6,7 @@
 
 ## How it works
 
-[backend/src/lib/email-client.ts](../backend/src/lib/email-client.ts) is a thin wrapper: `getClient()` lazily builds a `Resend` client from `RESEND_API_KEY`, caching `null` if it's unset so `sendEmail()` can silently no-op instead of crashing — the same fail-soft pattern used everywhere else in this codebase for optional third-party integrations. `sendEmail({ to, subject, html })` sends from `EMAIL_FROM` if set, otherwise falls back to Resend's shared sandbox sender (`onboarding@resend.dev`), which works without verifying your own domain — convenient for local/dev, not something you'd want in production (recipients would see a generic Resend address, not your own domain).
+[backend/src/lib/email-client.ts](../../backend/src/lib/email-client.ts) is a thin wrapper: `getClient()` lazily builds a `Resend` client from `RESEND_API_KEY`, caching `null` if it's unset so `sendEmail()` can silently no-op instead of crashing — the same fail-soft pattern used everywhere else in this codebase for optional third-party integrations. `sendEmail({ to, subject, html })` sends from `EMAIL_FROM` if set, otherwise falls back to Resend's shared sandbox sender (`onboarding@resend.dev`), which works without verifying your own domain — convenient for local/dev, not something you'd want in production (recipients would see a generic Resend address, not your own domain).
 
 Called from `notification.service.ts`, triggered by the same two paths as push notifications: `PickReminderJob`/`ResultsNotificationJob` (automated, see [05-bullmq-jobs.md](05-bullmq-jobs.md)) and `POST /admin/broadcast` (manual, commissioner-triggered).
 

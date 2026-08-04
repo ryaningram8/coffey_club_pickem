@@ -7,6 +7,8 @@ Status: `[ ]` todo · `[~]` in progress · `[x]` done
 
 ## Phase 1 — Foundation
 
+**2026-08-04:** login (`POST /auth/login`) verified working through the actual full `docker compose` stack — all 4 services (`postgres`, `redis`, `api`, `nginx`) containerized and healthy together for the first time, on a Proxmox dev VM, Flutter web build served by `nginx` and proxied through to `api`. Everything below was previously tested with `postgres`/`redis` dockerized but `api` run locally via `npm run dev`, not the full containerized stack — that distinction is why this is called out separately rather than folded into the existing notes. Only login has been re-verified against the real stack so far; the rest of Phases 1–4 still reflect the earlier (non-fully-containerized) testing pass and should be revisited.
+
 ### Project Scaffolding
 - [x] Initialize Flutter monorepo (`apps/web`, `apps/mobile`, `packages/coffey_ui`)
 - [x] Initialize Node.js + TypeScript backend with Fastify

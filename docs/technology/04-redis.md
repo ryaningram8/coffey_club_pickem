@@ -6,13 +6,13 @@ An in-memory key-value store. In most stacks Redis wears two hats — cache and 
 
 ## How it works
 
-BullMQ needs somewhere durable-but-fast to keep queue state — which jobs are waiting, which are running, which repeat on a cron schedule, what data each job was given. Redis is what it uses for that. [backend/src/lib/redis.ts](../backend/src/lib/redis.ts) builds the connection options from `REDIS_URL` and hands them to BullMQ; [backend/src/lib/queues.ts](../backend/src/lib/queues.ts) then instantiates three named `Queue` objects (`odds-refresh`, `score-sync`, `notifications`) on top of that connection.
+BullMQ needs somewhere durable-but-fast to keep queue state — which jobs are waiting, which are running, which repeat on a cron schedule, what data each job was given. Redis is what it uses for that. [backend/src/lib/redis.ts](../../backend/src/lib/redis.ts) builds the connection options from `REDIS_URL` and hands them to BullMQ; [backend/src/lib/queues.ts](../../backend/src/lib/queues.ts) then instantiates three named `Queue` objects (`odds-refresh`, `score-sync`, `notifications`) on top of that connection.
 
 One implementation detail worth knowing: `redis.ts` deliberately passes a plain `{ host, port, password }` object to BullMQ rather than a real `ioredis` client instance — the comment in that file explains BullMQ bundles its own nested copy of `ioredis`, which TypeScript treats as a structurally different type from a standalone `ioredis` you'd `npm install` yourself. Passing options instead of an instance sidesteps the type mismatch entirely.
 
 ## Where it runs
 
-The `redis` service in [docker-compose.yml](../docker-compose.yml): `redis:7-alpine`, password-protected (`--requirepass ${REDIS_PASSWORD}`), with a named volume (`redis_data`) so queue state survives a container restart. Currently running locally on this dev machine, port `6379` exposed to the host (same "local dev only, remove in prod" caveat as Postgres — production should only let the `api` container reach it over the internal Docker network).
+The `redis` service in [docker-compose.yml](../../docker-compose.yml): `redis:7-alpine`, password-protected (`--requirepass ${REDIS_PASSWORD}`), with a named volume (`redis_data`) so queue state survives a container restart. Currently running locally on this dev machine, port `6379` exposed to the host (same "local dev only, remove in prod" caveat as Postgres — production should only let the `api` container reach it over the internal Docker network).
 
 ## How to view it
 

@@ -6,7 +6,7 @@
 
 ## How it works
 
-Three named queues, defined in [backend/src/lib/queues.ts](../backend/src/lib/queues.ts): `odds-refresh`, `score-sync`, `notifications`. Workers for all three are started by `registerJobs()` in [backend/src/jobs/register.ts](../backend/src/jobs/register.ts), called once from `server.ts` at boot — **there is no separate worker process**, the same Node process serving HTTP requests also runs these workers.
+Three named queues, defined in [backend/src/lib/queues.ts](../../backend/src/lib/queues.ts): `odds-refresh`, `score-sync`, `notifications`. Workers for all three are started by `registerJobs()` in [backend/src/jobs/register.ts](../../backend/src/jobs/register.ts), called once from `server.ts` at boot — **there is no separate worker process**, the same Node process serving HTTP requests also runs these workers.
 
 | Queue | Job class | Schedule | What it does |
 |---|---|---|---|
@@ -15,7 +15,7 @@ Three named queues, defined in [backend/src/lib/queues.ts](../backend/src/lib/qu
 | `notifications` | `PickReminderJob` | one-off, enqueued per-user when a commissioner publishes a week (from `assignGames` in `game.service.ts`) — fires `hoursBeforeDeadline` before that user's configured reminder time | Sends a push/email pick reminder |
 | `notifications` | `ResultsNotificationJob` | one-off, enqueued per participant from `WeekCompleteJob` after a week finalizes | Sends a push/email results notification |
 
-`WeekCompleteJob` ([backend/src/jobs/week-complete.job.ts](../backend/src/jobs/week-complete.job.ts)) is a bit different from the others — it isn't on a queue itself, it's logic triggered by `score-sync` when it notices every game in a week is `final` or `cancelled`. It computes rankings/payouts (`WeeklyResult` rows) and then enqueues `ResultsNotificationJob` for everyone.
+`WeekCompleteJob` ([backend/src/jobs/week-complete.job.ts](../../backend/src/jobs/week-complete.job.ts)) is a bit different from the others — it isn't on a queue itself, it's logic triggered by `score-sync` when it notices every game in a week is `final` or `cancelled`. It computes rankings/payouts (`WeeklyResult` rows) and then enqueues `ResultsNotificationJob` for everyone.
 
 All job classes follow the same shape: a class with a `process()` method, called from inside a `Worker` callback in `register.ts`. Per CLAUDE.md, jobs are written to be **idempotent** — safe to run twice without double-counting or double-sending — since BullMQ will retry a job that throws.
 

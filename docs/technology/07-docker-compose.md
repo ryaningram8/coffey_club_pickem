@@ -6,11 +6,11 @@ Docker packages an app + its dependencies into a portable container image. Docke
 
 ## How it works
 
-[docker-compose.yml](../docker-compose.yml) at the repo root defines four services:
+[docker-compose.yml](../../docker-compose.yml) at the repo root defines four services:
 
 1. **`postgres`** — `postgres:16-alpine`, the database. See [03-database-postgres.md](03-database-postgres.md).
 2. **`redis`** — `redis:7-alpine`, the job queue backend. See [04-redis.md](04-redis.md).
-3. **`api`** — built from [backend/Dockerfile](../backend/Dockerfile) (this repo's own code, not a public image). Waits for `postgres` and `redis` to report `healthy` before starting (`depends_on: condition: service_healthy`), then runs the compiled Fastify server. See [02-backend-api.md](02-backend-api.md).
+3. **`api`** — built from [backend/Dockerfile](../../backend/Dockerfile) (this repo's own code, not a public image). Waits for `postgres` and `redis` to report `healthy` before starting (`depends_on: condition: service_healthy`), then runs the compiled Fastify server. See [02-backend-api.md](02-backend-api.md).
 4. **`nginx`** — `nginx:alpine`, sits in front of everything. See [08-nginx.md](08-nginx.md).
 
 All four sit on Compose's default private network, addressable by service name — this is why `nginx.conf` proxies to `http://api:4000` and the `api` service's `DATABASE_URL` points at host `postgres`, not `localhost`: inside that network, the service name *is* the hostname.

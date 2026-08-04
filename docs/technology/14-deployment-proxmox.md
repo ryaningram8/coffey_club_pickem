@@ -25,7 +25,7 @@ Physically: whatever hardware the Proxmox homelab is on, at whatever location th
 
 ## How to view/access it
 
-- **The app itself**: `https://coffeyclub.example.com` (a placeholder — swap for whatever real domain this ends up using, both in DNS and in [nginx.conf](../nginx/nginx.conf)'s `server_name`).
+- **The app itself**: `https://coffeyclub.example.com` (a placeholder — swap for whatever real domain this ends up using, both in DNS and in [nginx.conf](../../nginx/nginx.conf)'s `server_name`).
 - **The server**: SSH into the Proxmox VM/container directly — this repo doesn't define any web-based admin panel for the deployment itself, only for Proxmox's own management (Proxmox has its own web UI, typically `https://<host>:8006`, for VM/container management — separate from anything this app does).
 - **Container health once deployed**: same `docker compose ps` / `docker compose logs -f <service>` commands as local dev (see [07-docker-compose.md](07-docker-compose.md)), just run on that host instead.
 - **Certs**: `certbot certificates` on the host to check expiry/renewal status; certbot typically sets up its own auto-renewal (a systemd timer or cron job), worth confirming that's actually in place rather than assuming it.

@@ -6,7 +6,7 @@ Stateless, token-based auth. The server never stores "sessions" — instead, on 
 
 ## How it works
 
-Two tokens, two purposes ([backend/src/lib/tokens.ts](../backend/src/lib/tokens.ts)):
+Two tokens, two purposes ([backend/src/lib/tokens.ts](../../backend/src/lib/tokens.ts)):
 
 - **Access token** — signed with `JWT_SECRET`, expires in **15 minutes**, payload is `{ sub: userId, role }`. This is what gets sent on every API call, as `Authorization: Bearer <token>`.
 - **Refresh token** — signed with a *different* secret (`JWT_REFRESH_SECRET`), expires in **30 days**, payload is `{ sub: userId, type: 'refresh' }`. Used only to mint a new access token via `POST /auth/refresh` once the access token expires.
@@ -15,7 +15,7 @@ Using two different secrets means a leaked access token can't be used to forge a
 
 **Login/signup flow**: `POST /auth/login` (email+password, bcrypt-verified, cost factor 12 per CLAUDE.md) or `POST /auth/signup` (validates an invite code, marks it used, creates the `User`) or `POST /auth/google` (exchanges a Google ID token for a session) — all three return `{ accessToken, refreshToken }`.
 
-**Per-request auth**: [backend/src/lib/middleware.ts](../backend/src/lib/middleware.ts) exports `authenticate` — a Fastify `preHandler` that reads the `Authorization` header, verifies the access token, and attaches `request.user = { id, role }`. Any route that needs a logged-in user adds this as a `preHandler`. `requireRole('commissioner', 'admin')` wraps `authenticate` and additionally 403s anyone whose role isn't in the allowed list — this is what protects commissioner/admin-only routes (game selection, payouts, broadcasts) per CLAUDE.md's rule that all such routes go through `requireRole`.
+**Per-request auth**: [backend/src/lib/middleware.ts](../../backend/src/lib/middleware.ts) exports `authenticate` — a Fastify `preHandler` that reads the `Authorization` header, verifies the access token, and attaches `request.user = { id, role }`. Any route that needs a logged-in user adds this as a `preHandler`. `requireRole('commissioner', 'admin')` wraps `authenticate` and additionally 403s anyone whose role isn't in the allowed list — this is what protects commissioner/admin-only routes (game selection, payouts, broadcasts) per CLAUDE.md's rule that all such routes go through `requireRole`.
 
 **Refresh**: when a client's access token expires (or is about to), it calls `POST /auth/refresh` with the refresh token; the server verifies it's a valid, non-expired `type: 'refresh'` token and issues a new access token. This is invisible to the user — no re-login every 15 minutes.
 
