@@ -24,6 +24,7 @@ RUN npm ci --omit=dev
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/src/prisma/schema.prisma ./src/prisma/schema.prisma
+COPY --from=builder /app/src/prisma/migrations ./src/prisma/migrations
 
 EXPOSE 4000
 
