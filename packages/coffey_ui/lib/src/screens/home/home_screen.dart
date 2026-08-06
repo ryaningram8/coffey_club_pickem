@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../blocs/auth/auth_bloc.dart';
 import '../../repositories/week_repository.dart';
+import '../../widgets/coffey_logo.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -15,7 +16,14 @@ class HomeScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Coffey Club Pickem'),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: const [
+            CoffeyLogo(height: 32),
+            SizedBox(width: 10),
+            Text('Coffey Club Pickem'),
+          ],
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.settings_outlined),

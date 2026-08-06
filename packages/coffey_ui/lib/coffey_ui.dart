@@ -75,6 +75,7 @@ export 'src/screens/standings/weekly_standings_screen.dart';
 export 'src/screens/standings/season_standings_screen.dart';
 
 // Widgets
+export 'src/widgets/coffey_logo.dart';
 export 'src/widgets/pick_game_card.dart';
 export 'src/widgets/available_game_tile.dart';
 export 'src/widgets/live_game_card.dart';
