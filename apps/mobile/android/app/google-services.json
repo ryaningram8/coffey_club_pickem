@@ -1,0 +1,68 @@
+{
+  "project_info": {
+    "project_number": "111220524779",
+    "project_id": "rji-home",
+    "storage_bucket": "rji-home.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:111220524779:android:2958bfab38f333611ee0ae",
+        "android_client_info": {
+          "package_name": "com.coffeyclub.coffey_mobile"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "111220524779-map4t5rm1580as570gomlret0hr600gh.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDZ7aRUkFjKAiZZdrS1YgXaTyzGZ4KZf1w"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "111220524779-map4t5rm1580as570gomlret0hr600gh.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:111220524779:android:0af888540bc330d41ee0ae",
+        "android_client_info": {
+          "package_name": "dev.saloosa.coffeyclubpickem"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "111220524779-map4t5rm1580as570gomlret0hr600gh.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDZ7aRUkFjKAiZZdrS1YgXaTyzGZ4KZf1w"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "111220524779-map4t5rm1580as570gomlret0hr600gh.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

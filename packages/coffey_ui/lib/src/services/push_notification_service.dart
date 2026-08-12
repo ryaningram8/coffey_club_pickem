@@ -13,6 +13,13 @@ import '../router/app_routes.dart';
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {}
 
+/// Public VAPID key for web push (Firebase Console → Project Settings →
+/// Cloud Messaging → Web Push certificates). Not a secret — it identifies
+/// the sender to the browser's push service, same role as an Android/iOS
+/// app signature. Ignored on non-web platforms.
+const _webPushVapidKey =
+    'BIcLn5VJkoe78WBpvtvNHXVkOcv825jvcjkiLCvr_sMH5-wHPe2xthJGUKoEqTXfHnZDfUJBit5g-T-lcr-KuEk';
+
 /// Registers this device for push, and routes to the relevant screen when
 /// the user taps a notification. Every Firebase/FCM call is wrapped so a
 /// device or build without Firebase configured (no google-services.json /
@@ -29,7 +36,9 @@ class PushNotificationService {
       final settings = await FirebaseMessaging.instance.requestPermission();
       if (settings.authorizationStatus == AuthorizationStatus.denied) return;
 
-      final token = await FirebaseMessaging.instance.getToken();
+      final token = await FirebaseMessaging.instance.getToken(
+        vapidKey: kIsWeb ? _webPushVapidKey : null,
+      );
       if (token != null) await _registerToken(token);
       FirebaseMessaging.instance.onTokenRefresh.listen(_registerToken);
 
