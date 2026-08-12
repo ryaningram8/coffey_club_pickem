@@ -48,6 +48,7 @@ export 'src/blocs/weekly_standings/weekly_standings_bloc.dart';
 export 'src/blocs/payouts/payouts_bloc.dart';
 export 'src/blocs/theme/theme_cubit.dart';
 export 'src/blocs/notification_prefs/notification_prefs_cubit.dart';
+export 'src/blocs/home_hero/home_hero_cubit.dart';
 
 // Repositories
 export 'src/repositories/auth_repository.dart';
@@ -80,3 +81,4 @@ export 'src/widgets/pick_game_card.dart';
 export 'src/widgets/available_game_tile.dart';
 export 'src/widgets/live_game_card.dart';
 export 'src/widgets/pick_correctness_icon.dart';
+export 'src/widgets/home_hero_card.dart';

@@ -104,6 +104,7 @@ model Week {
   pickDeadline DateTime   // hard cutoff — Friday 23:59:59 CT
   status       WeekStatus @default(upcoming)
   pot          Decimal?   @db.Decimal(10, 2) // this week's payout pool; split across top 3 by season payoutXPct
+  commissionerMessage String? // free-text weekly roast, set by the commissioner, shown on the home screen
   createdAt    DateTime   @default(now())
 
   season        Season         @relation(fields: [seasonId], references: [id])

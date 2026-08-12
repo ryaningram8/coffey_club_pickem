@@ -38,6 +38,7 @@ export interface WeekDto {
   pickDeadline: string;
   status: WeekStatus;
   pot: string | null;
+  commissionerMessage: string | null;
   games: GameDto[];
 }
 
@@ -49,6 +50,7 @@ export interface WeekSummaryDto {
   pickDeadline: string;
   status: WeekStatus;
   pot: string | null;
+  commissionerMessage: string | null;
   gameCount: number;
 }
 
@@ -112,6 +114,7 @@ function toWeekDto(week: WeekWithGames): WeekDto {
     pickDeadline: week.pickDeadline.toISOString(),
     status: week.status,
     pot: week.pot?.toString() ?? null,
+    commissionerMessage: week.commissionerMessage,
     games: week.games.map(toGameDto),
   };
 }
@@ -125,6 +128,7 @@ export function toWeekSummaryDto(week: Week & { games: { id: string }[] }): Week
     pickDeadline: week.pickDeadline.toISOString(),
     status: week.status,
     pot: week.pot?.toString() ?? null,
+    commissionerMessage: week.commissionerMessage,
     gameCount: week.games.length,
   };
 }
@@ -151,7 +155,13 @@ export async function createWeek(
 
 export async function updateWeek(
   weekId: string,
-  input: Partial<{ label: string; pickDeadline: Date; status: WeekStatus; pot: number | null }>,
+  input: Partial<{
+    label: string;
+    pickDeadline: Date;
+    status: WeekStatus;
+    pot: number | null;
+    commissionerMessage: string | null;
+  }>,
 ): Promise<WeekDto> {
   const existing = await prisma.week.findUnique({ where: { id: weekId } });
   if (!existing) throw new NotFoundError('Week');

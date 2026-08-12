@@ -15,6 +15,7 @@ abstract class WeekSummaryModel with _$WeekSummaryModel {
     required DateTime pickDeadline,
     required String status,
     String? pot,
+    String? commissionerMessage,
     required int gameCount,
   }) = _WeekSummaryModel;
 

@@ -67,6 +67,39 @@ class _CommissionerWeekScreenState extends State<CommissionerWeekScreen> {
               Text('Status: ${week.status.replaceAll('_', ' ')} · '
                   'Deadline: ${_formatDate(week.pickDeadline)}'),
               const SizedBox(height: 16),
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Weekly Message', style: Theme.of(context).textTheme.titleSmall),
+                            const SizedBox(height: 4),
+                            Text(
+                              week.commissionerMessage?.isNotEmpty == true
+                                  ? week.commissionerMessage!
+                                  : 'No message set yet.',
+                              style: week.commissionerMessage?.isNotEmpty == true
+                                  ? const TextStyle(fontStyle: FontStyle.italic)
+                                  : TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                            ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.edit_outlined),
+                        tooltip: 'Edit message',
+                        onPressed: () => _editMessage(context, week),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
               if (week.games.isEmpty)
                 const Text('No games assigned yet.')
               else
@@ -89,6 +122,48 @@ class _CommissionerWeekScreenState extends State<CommissionerWeekScreen> {
         },
       ),
     );
+  }
+
+  Future<void> _editMessage(BuildContext context, WeekModel week) async {
+    final controller = TextEditingController(text: week.commissionerMessage ?? '');
+    final weekRepository = context.read<WeekRepository>();
+    final messenger = ScaffoldMessenger.of(context);
+
+    final text = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Weekly Message'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          maxLength: 500,
+          maxLines: 4,
+          decoration: const InputDecoration(hintText: "Who's getting roasted this week?"),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(controller.text),
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+    if (text == null) return;
+
+    try {
+      await weekRepository.updateCommissionerMessage(
+        widget.weekId,
+        text.trim().isEmpty ? null : text.trim(),
+      );
+      if (!mounted) return;
+      setState(() => _weekFuture = weekRepository.getWeek(widget.weekId));
+    } catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text('Could not save message: $e')));
+    }
   }
 
   static String _formatDate(DateTime dateTime) {

@@ -39,6 +39,14 @@ class WeekRepository with ApiErrorMapper {
     );
   }
 
+  /// Separate from [updateWeek] since its `'label': ?label` include-if-present
+  /// pattern can't express "explicitly clear to null" — this always sends
+  /// the field, null included, mirroring PayoutRepository.markPayout's
+  /// single-purpose shape.
+  Future<WeekModel> updateCommissionerMessage(String weekId, String? message) {
+    return guard(() => _api.updateWeek(weekId, {'commissionerMessage': message}));
+  }
+
   Future<WeekModel> assignGames(String weekId, List<AvailableGameModel> games) {
     Map<String, dynamic> team(AvailableTeamModel t) => {
           'espnId': t.espnId,
