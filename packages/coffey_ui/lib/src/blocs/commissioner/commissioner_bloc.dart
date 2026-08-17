@@ -23,7 +23,7 @@ class CommissionerBloc extends Bloc<CommissionerEvent, CommissionerState> {
     Emitter<CommissionerState> emit,
   ) async {
     emit(const CommissionerState.loading());
-    await _loadWeeks(emit);
+    await _loadWeeks(emit, event.season);
   }
 
   Future<void> _onWeekCreateRequested(
@@ -40,19 +40,14 @@ class CommissionerBloc extends Bloc<CommissionerEvent, CommissionerState> {
         label: event.label,
         pickDeadline: event.pickDeadline,
       );
-      await _loadWeeks(emit);
+      await _loadWeeks(emit, current.season);
     } catch (e) {
       emit(CommissionerState.failure(e.toString()));
     }
   }
 
-  Future<void> _loadWeeks(Emitter<CommissionerState> emit) async {
+  Future<void> _loadWeeks(Emitter<CommissionerState> emit, SeasonModel season) async {
     try {
-      final season = await _seasonRepository.getActiveSeason();
-      if (season == null) {
-        emit(const CommissionerState.empty());
-        return;
-      }
       final weeks = await _seasonRepository.getWeeks(season.id);
       emit(CommissionerState.loaded(season: season, weeks: weeks));
     } catch (e) {

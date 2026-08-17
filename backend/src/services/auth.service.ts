@@ -1,6 +1,5 @@
 import bcrypt from 'bcrypt';
 import { OAuth2Client } from 'google-auth-library';
-import type { Role } from '@prisma/client';
 import { prisma } from '../lib/prisma';
 import {
   ConflictError,
@@ -23,15 +22,15 @@ export interface UserDto {
   id: string;
   email: string;
   name: string;
-  role: Role;
+  isAdmin: boolean;
   venmoHandle: string | null;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function issueTokens(userId: string, role: Role): AuthTokens {
+function issueTokens(userId: string, isAdmin: boolean): AuthTokens {
   return {
-    accessToken: signAccessToken(userId, role),
+    accessToken: signAccessToken(userId, isAdmin),
     refreshToken: signRefreshToken(userId),
   };
 }
@@ -40,25 +39,26 @@ function toUserDto(user: {
   id: string;
   email: string;
   name: string;
-  role: Role;
+  isAdmin: boolean;
   venmoHandle: string | null;
 }): UserDto {
   return {
     id: user.id,
     email: user.email,
     name: user.name,
-    role: user.role,
+    isAdmin: user.isAdmin,
     venmoHandle: user.venmoHandle,
   };
 }
 
-async function validateInviteCode(code: string): Promise<void> {
+async function validateInviteCode(code: string) {
   const invitation = await prisma.invitation.findUnique({ where: { code } });
   if (!invitation) throw new ValidationError('Invalid invite code');
   if (invitation.usedBy) throw new ValidationError('Invite code has already been used');
   if (invitation.expiresAt && invitation.expiresAt < new Date()) {
     throw new ValidationError('Invite code has expired');
   }
+  return invitation;
 }
 
 // ─── Service functions ────────────────────────────────────────────────────────
@@ -69,7 +69,7 @@ export async function signup(input: {
   password: string;
   inviteCode: string;
 }): Promise<{ tokens: AuthTokens; user: UserDto }> {
-  await validateInviteCode(input.inviteCode);
+  const invitation = await validateInviteCode(input.inviteCode);
 
   const existing = await prisma.user.findUnique({ where: { email: input.email } });
   if (existing) throw new ConflictError('An account with this email already exists');
@@ -84,10 +84,15 @@ export async function signup(input: {
       where: { code: input.inviteCode },
       data: { usedBy: newUser.id, usedAt: new Date() },
     });
+    if (invitation.seasonId) {
+      await tx.seasonMembership.create({
+        data: { userId: newUser.id, seasonId: invitation.seasonId },
+      });
+    }
     return newUser;
   });
 
-  return { tokens: issueTokens(user.id, user.role), user: toUserDto(user) };
+  return { tokens: issueTokens(user.id, user.isAdmin), user: toUserDto(user) };
 }
 
 export async function login(input: {
@@ -100,7 +105,7 @@ export async function login(input: {
   const valid = await bcrypt.compare(input.password, user.passwordHash);
   if (!valid) throw new UnauthorizedError('Invalid email or password');
 
-  return { tokens: issueTokens(user.id, user.role), user: toUserDto(user) };
+  return { tokens: issueTokens(user.id, user.isAdmin), user: toUserDto(user) };
 }
 
 export async function googleAuth(input: {
@@ -142,7 +147,7 @@ export async function googleAuth(input: {
       if (!input.inviteCode) {
         throw new ValidationError('An invite code is required to create a new account');
       }
-      await validateInviteCode(input.inviteCode);
+      const invitation = await validateInviteCode(input.inviteCode);
 
       user = await prisma.$transaction(async (tx) => {
         const newUser = await tx.user.create({
@@ -152,16 +157,21 @@ export async function googleAuth(input: {
           where: { code: input.inviteCode! },
           data: { usedBy: newUser.id, usedAt: new Date() },
         });
+        if (invitation.seasonId) {
+          await tx.seasonMembership.create({
+            data: { userId: newUser.id, seasonId: invitation.seasonId },
+          });
+        }
         return newUser;
       });
     }
   }
 
-  return { tokens: issueTokens(user.id, user.role), user: toUserDto(user) };
+  return { tokens: issueTokens(user.id, user.isAdmin), user: toUserDto(user) };
 }
 
 export async function refreshTokens(userId: string): Promise<AuthTokens> {
   const user = await prisma.user.findUnique({ where: { id: userId } });
   if (!user) throw new UnauthorizedError('User not found');
-  return issueTokens(user.id, user.role);
+  return issueTokens(user.id, user.isAdmin);
 }

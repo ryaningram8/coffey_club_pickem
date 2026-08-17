@@ -7,7 +7,9 @@ import { gameRoutes } from './game.routes';
 import { pickRoutes } from './pick.routes';
 import { weekStandingsRoutes, seasonStandingsRoutes } from './standings.routes';
 import { adminRoutes } from './admin.routes';
+import { adminUsersRoutes } from './admin-users.routes';
 import { userRoutes } from './user.routes';
+import { invitationRoutes } from './invitation.routes';
 
 /**
  * Register all API route groups.
@@ -22,8 +24,7 @@ export async function registerRoutes(server: FastifyInstance) {
   await server.register(weekStandingsRoutes, { prefix: '/weeks' });
   await server.register(seasonStandingsRoutes, { prefix: '/seasons' });
   await server.register(adminRoutes, { prefix: '/admin' });
+  await server.register(adminUsersRoutes, { prefix: '/admin/users' });
   await server.register(userRoutes, { prefix: '/users' });
-
-  // Phase 4: add these as implemented
-  // await server.register(invitationRoutes, { prefix: '/invitations' });
+  await server.register(invitationRoutes, { prefix: '/invitations' });
 }

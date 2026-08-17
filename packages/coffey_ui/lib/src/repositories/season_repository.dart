@@ -10,6 +10,13 @@ class SeasonRepository with ApiErrorMapper {
 
   final SeasonApi _api;
 
+  Future<List<SeasonModel>> getSeasons() => guard(() => _api.getSeasons());
+
+  /// Pools the current user has actually joined, each with their role in
+  /// it — the non-admin counterpart to [getSeasons], used by the pool
+  /// switcher.
+  Future<List<SeasonModel>> getMySeasons() => guard(() => _api.getMySeasons());
+
   /// Null when no active or upcoming season exists yet (off-season empty state).
   Future<SeasonModel?> getActiveSeason() async {
     try {

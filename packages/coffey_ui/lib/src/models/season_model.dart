@@ -14,6 +14,7 @@ abstract class SeasonModel with _$SeasonModel {
     required String payout1stPct,
     required String payout2ndPct,
     required String payout3rdPct,
+    String? myRole,
   }) = _SeasonModel;
 
   factory SeasonModel.fromJson(Map<String, dynamic> json) => _$SeasonModelFromJson(json);

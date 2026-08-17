@@ -1,5 +1,5 @@
 import { prisma } from '../lib/prisma';
-import { NotFoundError, ValidationError } from '../lib/errors';
+import { ForbiddenError, NotFoundError, ValidationError } from '../lib/errors';
 
 export interface PickDto {
   gameId: string;
@@ -34,6 +34,11 @@ export async function submitPicks(
   if (week.pickDeadline <= new Date()) {
     throw new ValidationError('The pick deadline for this week has passed');
   }
+
+  const membership = await prisma.seasonMembership.findUnique({
+    where: { userId_seasonId: { userId, seasonId: week.seasonId } },
+  });
+  if (!membership) throw new ForbiddenError('You are not a member of this pool');
 
   const gamesById = new Map(week.games.map((g) => [g.id, g]));
   for (const pick of picks) {

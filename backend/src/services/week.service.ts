@@ -180,22 +180,47 @@ export async function getWeekWithGames(weekId: string): Promise<WeekDto> {
   return toWeekDto(week);
 }
 
+/** Resolves a week to its season — used by pool-commissioner authorization checks. */
+export async function getSeasonIdForWeek(weekId: string): Promise<string> {
+  const week = await prisma.week.findUnique({ where: { id: weekId }, select: { seasonId: true } });
+  if (!week) throw new NotFoundError('Week');
+  return week.seasonId;
+}
+
+/** Resolves a game to its season (via its week) — same purpose as getSeasonIdForWeek. */
+export async function getSeasonIdForGame(gameId: string): Promise<string> {
+  const game = await prisma.game.findUnique({
+    where: { id: gameId },
+    select: { week: { select: { seasonId: true } } },
+  });
+  if (!game) throw new NotFoundError('Game');
+  return game.week.seasonId;
+}
+
 /**
- * The week a player should currently see: an in-progress or open week if
- * one exists, otherwise the nearest upcoming week. Throws 404 if neither
+ * The week a player should currently see within one specific pool: an
+ * in-progress or open week if one exists, otherwise the nearest upcoming
+ * week. Throws 404 if the user isn't a member of `seasonId`, or if neither
  * exists (off-season / no weeks created yet) — callers treat that as an
- * empty state, not a hard error.
+ * empty state, not a hard error. Scoped to a single pool (rather than
+ * guessing across every pool the user belongs to) now that the Flutter pool
+ * switcher makes "which pool" an explicit choice, not something to infer.
  */
-export async function getCurrentWeek(): Promise<WeekDto> {
+export async function getCurrentWeek(userId: string, seasonId: string): Promise<WeekDto> {
+  const membership = await prisma.seasonMembership.findUnique({
+    where: { userId_seasonId: { userId, seasonId } },
+  });
+  if (!membership) throw new NotFoundError('Active week');
+
   const active = await prisma.week.findFirst({
-    where: { status: { in: ['picks_open', 'locked', 'in_progress'] } },
+    where: { seasonId, status: { in: ['picks_open', 'locked', 'in_progress'] } },
     orderBy: { pickDeadline: 'asc' },
     include: gamesInclude,
   });
   if (active) return toWeekDto(active);
 
   const upcoming = await prisma.week.findFirst({
-    where: { status: 'upcoming' },
+    where: { seasonId, status: 'upcoming' },
     orderBy: { pickDeadline: 'asc' },
     include: gamesInclude,
   });
@@ -253,9 +278,8 @@ export async function assignGames(weekId: string, games: AssignGameInput[]): Pro
       const homeTeam = await resolveTeam(game.sport, game.homeTeam);
       const awayTeam = await resolveTeam(game.sport, game.awayTeam);
       await tx.game.upsert({
-        where: { espnGameId: game.espnGameId },
+        where: { weekId_espnGameId: { weekId, espnGameId: game.espnGameId } },
         update: {
-          weekId,
           gameTime: game.gameTime,
           homeTeamId: homeTeam.id,
           awayTeamId: awayTeam.id,
@@ -282,7 +306,7 @@ export async function assignGames(weekId: string, games: AssignGameInput[]): Pro
   });
 
   if (week.status === 'upcoming') {
-    await schedulePickReminders(weekId, week.pickDeadline);
+    await schedulePickReminders(weekId, week.seasonId, week.pickDeadline);
   }
 
   return getWeekWithGames(weekId);

@@ -14,7 +14,6 @@ async function main() {
     data: { status: 'active', payout1stPct: 50, payout2ndPct: 30, payout3rdPct: 20 },
   });
 
-  const admin = await prisma.user.findUniqueOrThrow({ where: { email: 'admin@coffeyclub.local' } });
   const passwordHash = await bcrypt.hash('demo-player-1', 12);
   const players = await Promise.all(
     [
@@ -30,7 +29,9 @@ async function main() {
       }),
     ),
   );
-  const allUsers = [admin, ...players];
+  // admin is deliberately excluded — the admin account never participates in
+  // picks for any pool, only players do.
+  const allUsers = players;
 
   async function team(name: string, abbr: string, espnId: string) {
     return prisma.team.upsert({
@@ -63,7 +64,7 @@ async function main() {
   });
 
   const g1 = await prisma.game.upsert({
-    where: { espnGameId: 'demo-g1' },
+    where: { weekId_espnGameId: { weekId: liveWeek.id, espnGameId: 'demo-g1' } },
     update: { status: 'final', homeScore: 24, awayScore: 20, winnerTeamId: chiefs.id },
     create: {
       weekId: liveWeek.id,
@@ -80,7 +81,7 @@ async function main() {
     },
   });
   const g2 = await prisma.game.upsert({
-    where: { espnGameId: 'demo-g2' },
+    where: { weekId_espnGameId: { weekId: liveWeek.id, espnGameId: 'demo-g2' } },
     update: { status: 'in_progress', homeScore: 10, awayScore: 14 },
     create: {
       weekId: liveWeek.id,
@@ -96,7 +97,7 @@ async function main() {
     },
   });
   const g3 = await prisma.game.upsert({
-    where: { espnGameId: 'demo-g3' },
+    where: { weekId_espnGameId: { weekId: liveWeek.id, espnGameId: 'demo-g3' } },
     update: { status: 'scheduled' },
     create: {
       weekId: liveWeek.id,
@@ -148,7 +149,7 @@ async function main() {
     },
   });
   const dg1 = await prisma.game.upsert({
-    where: { espnGameId: 'demo-dg1' },
+    where: { weekId_espnGameId: { weekId: doneWeek.id, espnGameId: 'demo-dg1' } },
     update: { status: 'final', homeScore: 27, awayScore: 24, winnerTeamId: chiefs.id },
     create: {
       weekId: doneWeek.id,
@@ -165,7 +166,7 @@ async function main() {
     },
   });
   const dg2 = await prisma.game.upsert({
-    where: { espnGameId: 'demo-dg2' },
+    where: { weekId_espnGameId: { weekId: doneWeek.id, espnGameId: 'demo-dg2' } },
     update: { status: 'final', homeScore: 17, awayScore: 31, winnerTeamId: cowboys.id },
     create: {
       weekId: doneWeek.id,
@@ -182,9 +183,8 @@ async function main() {
     },
   });
 
-  // admin + alice pick both winners (tie for 1st), bob picks 1 of 2, carol/dave pick 0.
+  // alice picks both winners (sole 1st), bob picks 1 of 2, carol/dave pick 0.
   const donePicks: Record<string, [string, string]> = {
-    [admin.id]: [chiefs.id, cowboys.id],
     [players[0].id]: [chiefs.id, cowboys.id],
     [players[1].id]: [chiefs.id, niners.id],
     [players[2].id]: [bills.id, niners.id],

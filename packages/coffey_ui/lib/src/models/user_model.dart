@@ -9,7 +9,7 @@ abstract class UserModel with _$UserModel {
     required String id,
     required String email,
     required String name,
-    required String role,
+    required bool isAdmin,
     String? venmoHandle,
   }) = _UserModel;
 

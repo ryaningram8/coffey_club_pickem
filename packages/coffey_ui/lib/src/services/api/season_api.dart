@@ -9,6 +9,12 @@ part 'season_api.g.dart';
 abstract class SeasonApi {
   factory SeasonApi(Dio dio, {String baseUrl}) = _SeasonApi;
 
+  @GET('/seasons')
+  Future<List<SeasonModel>> getSeasons();
+
+  @GET('/seasons/mine')
+  Future<List<SeasonModel>> getMySeasons();
+
   @GET('/seasons/active')
   Future<SeasonModel> getActiveSeason();
 

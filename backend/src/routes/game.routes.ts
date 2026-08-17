@@ -2,7 +2,7 @@ import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import * as gameService from '../services/game.service';
 import * as weekService from '../services/week.service';
-import { requireRole } from '../lib/middleware';
+import { requireAnyCommissioner, requirePoolCommissioner } from '../lib/middleware';
 
 const idParams = z.object({ id: z.string().min(1) });
 
@@ -21,7 +21,7 @@ const updateGameBody = z.object({
 export async function gameRoutes(server: FastifyInstance) {
   server.get(
     '/available',
-    { preHandler: requireRole('commissioner', 'admin') },
+    { preHandler: requireAnyCommissioner() },
     async (request) => {
       const { sport } = availableQuery.parse(request.query);
       return gameService.getAvailableGames(sport);
@@ -30,7 +30,11 @@ export async function gameRoutes(server: FastifyInstance) {
 
   server.put(
     '/:id',
-    { preHandler: requireRole('commissioner', 'admin') },
+    {
+      preHandler: requirePoolCommissioner(async (request) =>
+        weekService.getSeasonIdForGame((request.params as { id: string }).id),
+      ),
+    },
     async (request) => {
       const { id } = idParams.parse(request.params);
       const body = updateGameBody.parse(request.body);
@@ -43,7 +47,11 @@ export async function gameRoutes(server: FastifyInstance) {
 
   server.delete(
     '/:id',
-    { preHandler: requireRole('commissioner', 'admin') },
+    {
+      preHandler: requirePoolCommissioner(async (request) =>
+        weekService.getSeasonIdForGame((request.params as { id: string }).id),
+      ),
+    },
     async (request, reply) => {
       const { id } = idParams.parse(request.params);
       await weekService.deleteGame(id);

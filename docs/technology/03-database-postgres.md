@@ -20,6 +20,153 @@ Postgres is the system of record — every user, pick, game, and result lives he
 
 All primary keys are UUIDs (`@default(uuid())`), per CLAUDE.md convention. Enums (`Role`, `Sport`, `WeekStatus`, `GameStatus`, etc.) are Postgres native enums, mapped 1:1 to TypeScript string-literal unions by Prisma.
 
+**Entity-relationship diagram** (generated from `schema.prisma` — regenerate by hand if the schema changes):
+
+```mermaid
+erDiagram
+    USER {
+        uuid id PK
+        string email UK
+        string name
+        string passwordHash "null when Google OAuth"
+        string googleId UK "nullable"
+        Role role "default player"
+        string venmoHandle "nullable"
+        json notificationPrefs
+        string_array fcmTokens
+        datetime createdAt
+    }
+
+    INVITATION {
+        uuid id PK
+        string code UK
+        uuid seasonId FK "nullable"
+        string email "nullable, targeted invite"
+        uuid createdBy FK
+        uuid usedBy FK "nullable, not unique"
+        datetime usedAt "nullable"
+        datetime expiresAt "nullable"
+        datetime createdAt
+    }
+
+    SEASON {
+        uuid id PK
+        string name
+        int year
+        SeasonStatus status "default upcoming"
+        decimal entryFee
+        decimal payout1stPct "default 50"
+        decimal payout2ndPct "default 30"
+        decimal payout3rdPct "default 20"
+        decimal defaultWeeklyPot "nullable, seeds Week.pot"
+        datetime createdAt
+    }
+
+    SEASON_MEMBERSHIP {
+        uuid id PK
+        uuid userId FK
+        uuid seasonId FK
+        datetime joinedAt
+    }
+
+    WEEK {
+        uuid id PK
+        uuid seasonId FK
+        int weekNumber
+        string label
+        datetime pickDeadline
+        WeekStatus status "default upcoming"
+        decimal pot "nullable"
+        string commissionerMessage "nullable"
+        datetime createdAt
+    }
+
+    TEAM {
+        uuid id PK
+        string name
+        string abbreviation
+        string logoUrl "nullable"
+        Sport sport
+        string conference "nullable"
+        string espnId "unique per sport"
+    }
+
+    GAME {
+        uuid id PK
+        uuid weekId FK
+        Sport sport
+        uuid homeTeamId FK
+        uuid awayTeamId FK
+        datetime gameTime
+        GameStatus status "default scheduled"
+        int homeScore "nullable"
+        int awayScore "nullable"
+        uuid winnerTeamId FK "nullable"
+        decimal spread "nullable, display only"
+        decimal overUnder "nullable, display only"
+        string espnGameId "nullable, unique per week"
+        int displayOrder "default 0"
+        datetime createdAt
+    }
+
+    PICK {
+        uuid id PK
+        uuid userId FK
+        uuid gameId FK
+        uuid weekId FK
+        uuid pickedTeamId FK
+        boolean isCorrect "nullable until finalized"
+        datetime submittedAt
+    }
+
+    WEEKLY_RESULT {
+        uuid id PK
+        uuid userId FK
+        uuid weekId FK
+        int correctPicks "default 0"
+        int totalPicks "default 0"
+        int rank "nullable until finalized"
+        decimal payoutAmount "nullable"
+        boolean isPaid "default false"
+    }
+
+    SEASON_STANDING {
+        uuid id PK
+        uuid userId FK
+        uuid seasonId FK
+        int totalCorrect "default 0"
+        int weeksPlayed "default 0"
+        decimal totalPayout "default 0"
+    }
+
+    USER ||--o{ INVITATION       : creates
+    USER |o--o{ INVITATION       : redeems
+    SEASON |o--o{ INVITATION     : scopes
+    USER ||--o{ SEASON_MEMBERSHIP  : joins
+    SEASON ||--o{ SEASON_MEMBERSHIP : has
+    SEASON ||--o{ WEEK            : contains
+    SEASON ||--o{ SEASON_STANDING : has
+    USER ||--o{ SEASON_STANDING   : has
+    WEEK ||--o{ GAME              : schedules
+    WEEK ||--o{ PICK              : has
+    WEEK ||--o{ WEEKLY_RESULT     : has
+    USER ||--o{ WEEKLY_RESULT     : has
+    USER ||--o{ PICK              : submits
+    TEAM ||--o{ GAME              : "plays home"
+    TEAM ||--o{ GAME              : "plays away"
+    TEAM |o--o{ GAME              : "wins (nullable)"
+    TEAM ||--o{ PICK              : "picked as"
+    GAME ||--o{ PICK              : has
+```
+
+A few constraints worth calling out that don't show up as boxes and arrows:
+
+- **`SeasonMembership`** is the junction table for the User↔Season many-to-many — a player can belong to more than one pool at once (e.g. a preseason test pool alongside the main season). `@@unique([userId, seasonId])` just stops joining the same pool twice; it's also what "active season" / "current week" resolution filters by.
+- **`Team.espnId`** is unique per `(sport, espnId)`, not globally — ESPN reuses small integer IDs across leagues, so the same numeric ID can point to one NFL team and one unrelated college team.
+- **`Game.espnGameId`** is unique per `(weekId, espnGameId)`, not globally — the same real-world matchup can be independently selected into more than one pool's week at once, so a global constraint would collide.
+- **`Pick.weekId`** is denormalized onto the row (rather than derived through `gameId → Game.weekId`) to keep weekly pick queries a single-table scan, alongside the `@@unique([userId, gameId])` one-pick-per-game rule.
+- **`Invitation.usedBy`** is deliberately not unique — a user redeems a distinct invite code per pool they join, so the same user can appear on multiple invitation rows over time.
+
 **Migrations**: every schema change is captured as a numbered SQL file under [backend/src/prisma/migrations/](../../backend/src/prisma/migrations/). There are 4 so far: `initial`, `team_espn_id_scoped_by_sport`, `add_weekly_pot_fields`, `add_fcm_tokens`. Running `npm run db:migrate` (`prisma migrate dev`) diffs your edited schema against the migration history, generates a new migration file, and applies it. This is a one-way ratchet in the intended workflow — you edit `schema.prisma`, Prisma writes the SQL, you don't hand-write migration SQL.
 
 ## Where it runs

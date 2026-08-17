@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../blocs/commissioner/commissioner_bloc.dart';
+import '../../blocs/selected_pool/selected_pool_cubit.dart';
 import '../../repositories/season_repository.dart';
 
 class CommissionerHomeScreen extends StatelessWidget {
@@ -9,10 +10,18 @@ class CommissionerHomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Reachable only when the pool switcher has a pool selected and the
+    // Home screen's Commissioner entry point is visible for it (see
+    // home_screen.dart), so a loaded selection is always expected here.
+    final poolState = context.read<SelectedPoolCubit>().state;
+    final season = (poolState as SelectedPoolLoaded)
+        .pools
+        .firstWhere((p) => p.id == poolState.selectedPoolId);
+
     return BlocProvider(
       create: (context) => CommissionerBloc(
         seasonRepository: context.read<SeasonRepository>(),
-      )..add(const CommissionerEvent.started()),
+      )..add(CommissionerEvent.started(season: season)),
       child: const _CommissionerHomeView(),
     );
   }
@@ -40,18 +49,6 @@ class _CommissionerHomeView extends StatelessWidget {
         builder: (context, state) {
           if (state is CommissionerInitial || state is CommissionerLoading) {
             return const Center(child: CircularProgressIndicator());
-          }
-          if (state is CommissionerEmpty) {
-            return const Center(
-              child: Padding(
-                padding: EdgeInsets.all(24),
-                child: Text(
-                  'No active season yet. Create one from the API '
-                  '(POST /seasons) to get started.',
-                  textAlign: TextAlign.center,
-                ),
-              ),
-            );
           }
           if (state is CommissionerFailure) {
             return const Center(child: Text('Something went wrong loading weeks.'));

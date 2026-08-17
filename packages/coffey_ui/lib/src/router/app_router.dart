@@ -2,11 +2,13 @@ import 'dart:async';
 import 'package:flutter/widgets.dart';
 import 'package:go_router/go_router.dart';
 import '../blocs/auth/auth_bloc.dart';
+import '../screens/admin/user_management_screen.dart';
 import '../screens/auth/login_screen.dart';
 import '../screens/auth/signup_screen.dart';
 import '../screens/commissioner/commissioner_home_screen.dart';
 import '../screens/commissioner/commissioner_week_screen.dart';
 import '../screens/commissioner/game_browser_screen.dart';
+import '../screens/commissioner/invite_management_screen.dart';
 import '../screens/commissioner/payouts_screen.dart';
 import '../screens/home/home_screen.dart';
 import '../screens/picks/pick_sheet_screen.dart';
@@ -111,6 +113,18 @@ class AppRouter {
           builder: (context, state) => PayoutsScreen(
             weekId: state.pathParameters['weekId']!,
           ),
+        ),
+        GoRoute(
+          path: AppRoutes.commissionerInvites,
+          name: 'commissionerInvites',
+          builder: (context, state) => const InviteManagementScreen(),
+        ),
+
+        // Admin
+        GoRoute(
+          path: AppRoutes.adminUsers,
+          name: 'adminUsers',
+          builder: (context, state) => const UserManagementScreen(),
         ),
 
         // TODO: Add remaining routes as screens are built (Phase 4)

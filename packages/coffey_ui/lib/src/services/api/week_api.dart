@@ -9,7 +9,7 @@ abstract class WeekApi {
   factory WeekApi(Dio dio, {String baseUrl}) = _WeekApi;
 
   @GET('/weeks/current')
-  Future<WeekModel> getCurrentWeek();
+  Future<WeekModel> getCurrentWeek(@Query('seasonId') String seasonId);
 
   @GET('/weeks/{id}')
   Future<WeekModel> getWeek(@Path('id') String id);

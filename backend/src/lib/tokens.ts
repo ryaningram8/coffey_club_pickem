@@ -1,9 +1,8 @@
 import jwt from 'jsonwebtoken';
-import type { Role } from '@prisma/client';
 
 export interface AccessTokenPayload {
   sub: string;
-  role: Role;
+  isAdmin: boolean;
 }
 
 export interface RefreshTokenPayload {
@@ -17,9 +16,9 @@ function getSecret(key: string): string {
   return value;
 }
 
-export function signAccessToken(userId: string, role: Role): string {
+export function signAccessToken(userId: string, isAdmin: boolean): string {
   return jwt.sign(
-    { sub: userId, role } satisfies AccessTokenPayload,
+    { sub: userId, isAdmin } satisfies AccessTokenPayload,
     getSecret('JWT_SECRET'),
     { expiresIn: '15m' },
   );

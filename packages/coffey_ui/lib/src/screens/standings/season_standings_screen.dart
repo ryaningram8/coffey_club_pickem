@@ -1,14 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../blocs/selected_pool/selected_pool_cubit.dart';
 import '../../models/season_standing_model.dart';
-import '../../repositories/season_repository.dart';
 import '../../repositories/standings_repository.dart';
 
-/// All-time season leaderboard. Resolves the active season itself (the
-/// route carries no seasonId), the same "discover the current one" approach
-/// HomeScreen uses for the current week. Simple fetch-and-display, so this
-/// uses FutureBuilder rather than a dedicated BLoC — same reasoning as
-/// CommissionerWeekScreen.
+/// All-time leaderboard for the currently selected pool (see
+/// SelectedPoolCubit). Simple fetch-and-display, so this uses FutureBuilder
+/// rather than a dedicated BLoC — same reasoning as CommissionerWeekScreen.
 class SeasonStandingsScreen extends StatefulWidget {
   const SeasonStandingsScreen({super.key});
 
@@ -26,11 +24,10 @@ class _SeasonStandingsScreenState extends State<SeasonStandingsScreen> {
   }
 
   Future<List<SeasonStandingModel>?> _load() async {
-    final seasonRepository = context.read<SeasonRepository>();
+    final poolState = context.read<SelectedPoolCubit>().state;
+    if (poolState is! SelectedPoolLoaded) return null;
     final standingsRepository = context.read<StandingsRepository>();
-    final season = await seasonRepository.getActiveSeason();
-    if (season == null) return null;
-    return standingsRepository.getSeasonStandings(season.id);
+    return standingsRepository.getSeasonStandings(poolState.selectedPoolId);
   }
 
   @override

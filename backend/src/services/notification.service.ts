@@ -170,9 +170,18 @@ export async function sendResultsNotification(userId: string, weekId: string): P
  * published. jobId is deterministic per (week, user) so re-publishing
  * (e.g. adding more games before lock) is a safe no-op rather than a
  * duplicate reminder — BullMQ rejects an add() with a jobId already queued.
+ * Scoped to `seasonId`'s members — otherwise publishing a week in one pool
+ * would queue a reminder for every user in every pool.
  */
-export async function schedulePickReminders(weekId: string, pickDeadline: Date): Promise<void> {
-  const users = await prisma.user.findMany({ select: { id: true, notificationPrefs: true } });
+export async function schedulePickReminders(
+  weekId: string,
+  seasonId: string,
+  pickDeadline: Date,
+): Promise<void> {
+  const users = await prisma.user.findMany({
+    where: { seasonMemberships: { some: { seasonId } } },
+    select: { id: true, notificationPrefs: true },
+  });
 
   for (const user of users) {
     const prefs = parsePrefs(user.notificationPrefs);
@@ -227,15 +236,22 @@ export interface BroadcastInput {
   title: string;
   message: string;
   channels: Array<'push' | 'email'>;
+  /** Omitted (admin only) = everyone; otherwise scoped to this pool's members. */
+  seasonId?: string;
 }
 
 /**
- * Commissioner/admin-initiated announcement to every user, independent of
- * their per-category notification prefs — an explicit admin action isn't
- * gated by the automated pick-reminder/results toggles.
+ * Admin- or pool-commissioner-initiated announcement, independent of
+ * per-category notification prefs — an explicit broadcast isn't gated by
+ * the automated pick-reminder/results toggles. Scoped to `seasonId`'s
+ * members when given, otherwise every user in the system (admin-only, per
+ * the route's authorization check).
  */
 export async function broadcast(input: BroadcastInput): Promise<{ recipientCount: number }> {
   const users = await prisma.user.findMany({
+    where: input.seasonId
+      ? { seasonMemberships: { some: { seasonId: input.seasonId } } }
+      : undefined,
     select: { id: true, email: true, fcmTokens: true },
   });
 

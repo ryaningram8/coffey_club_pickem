@@ -2,7 +2,8 @@ import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import * as resultsService from '../services/results.service';
 import * as notificationService from '../services/notification.service';
-import { requireRole } from '../lib/middleware';
+import * as weekService from '../services/week.service';
+import { requirePoolCommissioner } from '../lib/middleware';
 
 const weekIdParams = z.object({ weekId: z.string().min(1) });
 
@@ -15,12 +16,17 @@ const broadcastBody = z.object({
   title: z.string().min(1).max(200),
   message: z.string().min(1).max(2000),
   channels: z.array(z.enum(['push', 'email'])).min(1),
+  seasonId: z.string().min(1).optional(),
 });
 
 export async function adminRoutes(server: FastifyInstance) {
   server.post(
     '/payouts/:weekId/mark',
-    { preHandler: requireRole('commissioner', 'admin') },
+    {
+      preHandler: requirePoolCommissioner(async (request) =>
+        weekService.getSeasonIdForWeek((request.params as { weekId: string }).weekId),
+      ),
+    },
     async (request) => {
       const { weekId } = weekIdParams.parse(request.params);
       const { userId, isPaid } = markPayoutBody.parse(request.body);
@@ -30,7 +36,11 @@ export async function adminRoutes(server: FastifyInstance) {
 
   server.post(
     '/broadcast',
-    { preHandler: requireRole('commissioner', 'admin') },
+    {
+      preHandler: requirePoolCommissioner(async (request) =>
+        (request.body as { seasonId?: string } | undefined)?.seasonId,
+      ),
+    },
     async (request) => {
       const body = broadcastBody.parse(request.body);
       return notificationService.broadcast(body);

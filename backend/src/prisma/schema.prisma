@@ -9,10 +9,11 @@ datasource db {
 
 // ─── Enums ────────────────────────────────────────────────────────────────────
 
-enum Role {
+// Per-pool role — a user's standing within one specific SeasonMembership.
+// Global admin status lives separately on User.isAdmin, not here.
+enum PoolRole {
   player
   commissioner
-  admin
 }
 
 enum Sport {
@@ -50,17 +51,18 @@ model User {
   name              String
   passwordHash      String?  // null when using Google OAuth
   googleId          String?  @unique
-  role              Role     @default(player)
+  isAdmin           Boolean  @default(false) // global, applies to every pool; per-pool standing is SeasonMembership.role
   venmoHandle       String?
   notificationPrefs Json     @default("{}")
   fcmTokens         String[] @default([])
   createdAt         DateTime @default(now())
 
   invitationsCreated Invitation[]   @relation("CreatedBy")
-  invitationUsed     Invitation?    @relation("UsedBy")
+  invitationsUsed    Invitation[]   @relation("UsedBy")
   picks              Pick[]
   weeklyResults      WeeklyResult[]
   seasonStandings    SeasonStanding[]
+  seasonMemberships  SeasonMembership[]
 }
 
 model Invitation {
@@ -69,7 +71,7 @@ model Invitation {
   seasonId  String?
   email     String?   // targeted invite; null = anyone with the code
   createdBy String
-  usedBy    String?   @unique
+  usedBy    String?   // not unique — a user redeems a distinct code per pool they join
   usedAt    DateTime?
   expiresAt DateTime?
   createdAt DateTime  @default(now())
@@ -94,6 +96,24 @@ model Season {
   weeks           Week[]
   invitations     Invitation[]
   seasonStandings SeasonStanding[]
+  memberships     SeasonMembership[]
+}
+
+// A user's enrollment in a season/pool. A user can belong to more than one
+// concurrently (e.g. a preseason test pool and the main regular-season pool)
+// — this is what "active season"/"current week" resolution filters by, so
+// each player only ever sees pools they've actually joined.
+model SeasonMembership {
+  id       String   @id @default(uuid())
+  userId   String
+  seasonId String
+  role     PoolRole @default(player)
+  joinedAt DateTime @default(now())
+
+  user   User   @relation(fields: [userId], references: [id])
+  season Season @relation(fields: [seasonId], references: [id])
+
+  @@unique([userId, seasonId])
 }
 
 model Week {
@@ -143,7 +163,7 @@ model Game {
   winnerTeamId String?
   spread       Decimal?   @db.Decimal(5, 1) // display only; positive = home team favored
   overUnder    Decimal?   @db.Decimal(5, 1) // display only
-  espnGameId   String?    @unique
+  espnGameId   String? // scoped per week, NOT globally unique — the same real-world game can be independently selected into more than one pool's week at once
   displayOrder Int        @default(0)
   createdAt    DateTime   @default(now())
 
@@ -152,6 +172,8 @@ model Game {
   awayTeam   Team  @relation("AwayTeam", fields: [awayTeamId], references: [id])
   winnerTeam Team? @relation("WinnerTeam", fields: [winnerTeamId], references: [id])
   picks      Pick[]
+
+  @@unique([weekId, espnGameId])
 }
 
 model Pick {

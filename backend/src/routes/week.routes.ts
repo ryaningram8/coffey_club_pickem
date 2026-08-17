@@ -1,9 +1,10 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import * as weekService from '../services/week.service';
-import { authenticate, requireRole } from '../lib/middleware';
+import { authenticate, requirePoolCommissioner, requirePoolMember } from '../lib/middleware';
 
 const idParams = z.object({ id: z.string().min(1) });
+const currentWeekQuery = z.object({ seasonId: z.string().min(1) });
 
 const updateWeekBody = z.object({
   label: z.string().min(1).max(100).optional(),
@@ -37,18 +38,31 @@ const assignGamesBody = z.object({
 });
 
 export async function weekRoutes(server: FastifyInstance) {
-  server.get('/current', { preHandler: authenticate }, async () => {
-    return weekService.getCurrentWeek();
+  server.get('/current', { preHandler: authenticate }, async (request) => {
+    const { seasonId } = currentWeekQuery.parse(request.query);
+    return weekService.getCurrentWeek(request.user.id, seasonId);
   });
 
-  server.get('/:id', { preHandler: authenticate }, async (request) => {
-    const { id } = idParams.parse(request.params);
-    return weekService.getWeekWithGames(id);
-  });
+  server.get(
+    '/:id',
+    {
+      preHandler: requirePoolMember(async (request) =>
+        weekService.getSeasonIdForWeek((request.params as { id: string }).id),
+      ),
+    },
+    async (request) => {
+      const { id } = idParams.parse(request.params);
+      return weekService.getWeekWithGames(id);
+    },
+  );
 
   server.put(
     '/:id',
-    { preHandler: requireRole('commissioner', 'admin') },
+    {
+      preHandler: requirePoolCommissioner(async (request) =>
+        weekService.getSeasonIdForWeek((request.params as { id: string }).id),
+      ),
+    },
     async (request) => {
       const { id } = idParams.parse(request.params);
       const body = updateWeekBody.parse(request.body);
@@ -61,7 +75,11 @@ export async function weekRoutes(server: FastifyInstance) {
 
   server.post(
     '/:id/games',
-    { preHandler: requireRole('commissioner', 'admin') },
+    {
+      preHandler: requirePoolCommissioner(async (request) =>
+        weekService.getSeasonIdForWeek((request.params as { id: string }).id),
+      ),
+    },
     async (request) => {
       const { id } = idParams.parse(request.params);
       const { games } = assignGamesBody.parse(request.body);

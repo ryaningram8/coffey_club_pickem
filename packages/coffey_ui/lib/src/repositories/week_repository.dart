@@ -10,12 +10,12 @@ class WeekRepository with ApiErrorMapper {
 
   final WeekApi _api;
 
-  /// Null when there's no active or upcoming week (off-season empty state) —
-  /// the backend 404s in that case, which we translate to null here so
-  /// callers don't have to special-case an ApiException.
-  Future<WeekModel?> getCurrentWeek() async {
+  /// Null when there's no active or upcoming week in this pool (off-season
+  /// empty state) — the backend 404s in that case, which we translate to
+  /// null here so callers don't have to special-case an ApiException.
+  Future<WeekModel?> getCurrentWeek(String seasonId) async {
     try {
-      return await guard(() => _api.getCurrentWeek());
+      return await guard(() => _api.getCurrentWeek(seasonId));
     } on ApiException catch (e) {
       if (e.isNotFound) return null;
       rethrow;

@@ -26,11 +26,13 @@ class HomeHeroCubit extends Cubit<HomeHeroState> {
     required StandingsRepository standingsRepository,
     required PickRepository pickRepository,
     required String currentUserId,
+    required String seasonId,
   })  : _weekRepository = weekRepository,
         _seasonRepository = seasonRepository,
         _standingsRepository = standingsRepository,
         _pickRepository = pickRepository,
         _currentUserId = currentUserId,
+        _seasonId = seasonId,
         super(const HomeHeroState.initial()) {
     load();
   }
@@ -40,11 +42,12 @@ class HomeHeroCubit extends Cubit<HomeHeroState> {
   final StandingsRepository _standingsRepository;
   final PickRepository _pickRepository;
   final String _currentUserId;
+  final String _seasonId;
 
   Future<void> load() async {
     emit(const HomeHeroState.loading());
     try {
-      final week = await _weekRepository.getCurrentWeek();
+      final week = await _weekRepository.getCurrentWeek(_seasonId);
       if (week == null) {
         emit(await _loadLastWeekRecap());
         return;
@@ -105,17 +108,14 @@ class HomeHeroCubit extends Cubit<HomeHeroState> {
     );
   }
 
-  /// The most recently completed week in the active season, or null if
-  /// there's no active season yet or none of its weeks are completed.
-  /// Shared by the recap branch (which needs the whole week) and the
-  /// this-week/live branches (which only need its commissioner message, so
-  /// the roast stays visible through the following week, not just during
-  /// the narrow gap the recap card occupies).
+  /// The most recently completed week in this pool, or null if none of its
+  /// weeks are completed yet. Shared by the recap branch (which needs the
+  /// whole week) and the this-week/live branches (which only need its
+  /// commissioner message, so the roast stays visible through the
+  /// following week, not just during the narrow gap the recap card
+  /// occupies).
   Future<WeekSummaryModel?> _findMostRecentCompletedWeek() async {
-    final season = await _seasonRepository.getActiveSeason();
-    if (season == null) return null;
-
-    final weeks = await _seasonRepository.getWeeks(season.id);
+    final weeks = await _seasonRepository.getWeeks(_seasonId);
     final completed = weeks.where((w) => w.status == 'completed').toList()
       ..sort((a, b) => b.weekNumber.compareTo(a.weekNumber));
     return completed.isEmpty ? null : completed.first;
