@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import '../models/auth_tokens_model.dart';
 import 'token_storage.dart';
 
@@ -21,6 +22,11 @@ class ApiClient {
         headers: {'Content-Type': 'application/json'},
         connectTimeout: const Duration(seconds: 10),
         receiveTimeout: const Duration(seconds: 30),
+        // Web only: makes the browser attach the HttpOnly refresh-token
+        // cookie on cross-origin requests (local dev serves the Flutter web
+        // app and this API on different ports, i.e. different origins).
+        // No-op on mobile.
+        extra: {'withCredentials': true},
       ),
     );
     // Interceptor receives the Dio instance so it can retry requests.
@@ -54,16 +60,24 @@ class _AuthInterceptor extends QueuedInterceptorsWrapper {
   ) async {
     if (err.response?.statusCode == 401) {
       try {
-        final refreshToken = await _tokenStorage.getRefreshToken();
-        if (refreshToken != null) {
+        // Web never has a stored refresh token (see TokenStorage.saveTokens)
+        // — it lives only in the HttpOnly cookie the browser sends
+        // automatically via withCredentials, so there's nothing to check
+        // before attempting refresh. Mobile keeps the original body-token
+        // flow, since it's actually persisted in secure storage there.
+        final refreshToken = kIsWeb ? null : await _tokenStorage.getRefreshToken();
+        if (kIsWeb || refreshToken != null) {
           // Use a bare Dio to avoid running the auth interceptor on the
           // refresh call itself, which would cause recursion.
           final refreshDio = Dio(
-            BaseOptions(baseUrl: _dio.options.baseUrl),
+            BaseOptions(
+              baseUrl: _dio.options.baseUrl,
+              extra: {'withCredentials': true},
+            ),
           );
           final response = await refreshDio.post(
             '/auth/refresh',
-            data: {'refreshToken': refreshToken},
+            data: refreshToken != null ? {'refreshToken': refreshToken} : null,
           );
           final tokens = AuthTokensModel.fromJson(
             response.data as Map<String, dynamic>,

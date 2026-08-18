@@ -20,4 +20,7 @@ abstract class AuthApi {
 
   @POST('/auth/refresh')
   Future<AuthTokensModel> refresh(@Body() Map<String, dynamic> body);
+
+  @POST('/auth/logout')
+  Future<void> logout();
 }

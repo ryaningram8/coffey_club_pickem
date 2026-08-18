@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -17,6 +18,7 @@ import 'repositories/standings_repository.dart';
 import 'repositories/week_repository.dart';
 import 'router/app_router.dart';
 import 'services/api_client.dart';
+import 'services/idle_timeout_service.dart';
 import 'services/push_notification_service.dart';
 import 'services/token_storage.dart';
 import 'theme/app_theme.dart';
@@ -47,6 +49,7 @@ class _CoffeyAppState extends State<CoffeyApp> {
   late final ThemeCubit _themeCubit;
   late final SelectedPoolCubit _selectedPoolCubit;
   late final GoRouter _router;
+  IdleTimeoutService? _idleTimeoutService;
   StreamSubscription<AuthState>? _pushRegistrationSubscription;
   StreamSubscription<AuthState>? _selectedPoolSubscription;
 
@@ -79,6 +82,10 @@ class _CoffeyAppState extends State<CoffeyApp> {
     );
     _router = AppRouter.createRouter(_authBloc);
 
+    if (kIsWeb) {
+      _idleTimeoutService = IdleTimeoutService(authBloc: _authBloc)..start();
+    }
+
     _pushRegistrationSubscription = _authBloc.stream.listen((state) {
       if (state is AuthAuthenticated) {
         _pushNotificationService.initialize(_router);
@@ -98,6 +105,7 @@ class _CoffeyAppState extends State<CoffeyApp> {
   void dispose() {
     _pushRegistrationSubscription?.cancel();
     _selectedPoolSubscription?.cancel();
+    _idleTimeoutService?.dispose();
     _authBloc.close();
     _themeCubit.close();
     _selectedPoolCubit.close();
@@ -126,13 +134,24 @@ class _CoffeyAppState extends State<CoffeyApp> {
         ],
         child: BlocBuilder<ThemeCubit, ThemeMode>(
           builder: (context, themeMode) {
-            return MaterialApp.router(
+            final app = MaterialApp.router(
               title: 'Coffey Club Pickem',
               theme: AppTheme.light(),
               darkTheme: AppTheme.dark(),
               themeMode: themeMode,
               routerConfig: _router,
               debugShowCheckedModeBanner: false,
+            );
+            // Feeds IdleTimeoutService (web only, no-op elsewhere): any raw
+            // pointer activity anywhere in the app resets its timer. Keyboard
+            // activity is handled separately inside the service itself via
+            // HardwareKeyboard, since that isn't tied to hit-testing here.
+            if (_idleTimeoutService == null) return app;
+            return Listener(
+              onPointerDown: (_) => _idleTimeoutService!.recordActivity(),
+              onPointerMove: (_) => _idleTimeoutService!.recordActivity(),
+              onPointerSignal: (_) => _idleTimeoutService!.recordActivity(),
+              child: app,
             );
           },
         ),

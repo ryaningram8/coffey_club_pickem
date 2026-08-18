@@ -9,7 +9,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
-      - "5432:5432"          # expose for local dev only; remove in prod
+      - "127.0.0.1:5432:5432"  # local-dev only: `npm run dev` on this host connects via localhost; not reachable from the LAN
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U coffey -d coffey_pickem"]
       interval: 10s
@@ -23,7 +23,7 @@ services:
     volumes:
       - redis_data:/data
     ports:
-      - "6379:6379"          # expose for local dev only; remove in prod
+      - "127.0.0.1:6379:6379"  # local-dev only: `npm run dev` on this host connects via localhost; not reachable from the LAN
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s

@@ -1,5 +1,7 @@
 import Fastify, { type FastifyError, type FastifyReply, type FastifyRequest } from 'fastify';
 import cors from '@fastify/cors';
+import cookie from '@fastify/cookie';
+import rateLimit from '@fastify/rate-limit';
 import { ZodError } from 'zod';
 import { AppError } from './lib/errors';
 import { fastifyLoggerOptions, logger } from './lib/logger';
@@ -24,6 +26,15 @@ async function start() {
         }
       : process.env.APP_URL ?? 'http://localhost:3000',
     credentials: true,
+  });
+
+  await server.register(cookie);
+
+  // Global rate-limit safety net; auth routes set stricter per-route overrides
+  // (see auth.routes.ts) since they're the actual brute-force/abuse surface.
+  await server.register(rateLimit, {
+    max: 200,
+    timeWindow: '1 minute',
   });
 
   // Routes

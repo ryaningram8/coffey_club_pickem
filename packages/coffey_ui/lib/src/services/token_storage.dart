@@ -20,17 +20,25 @@ class TokenStorage {
   static const _refreshTokenKey = 'refresh_token';
   static const _userKey = 'current_user';
 
+  /// On web, the refresh token itself is deliberately never persisted here —
+  /// the backend also sets it as an HttpOnly cookie (see auth.routes.ts),
+  /// which JS can't read even via an XSS bug, unlike anything stored through
+  /// [SharedPreferences]/localStorage. Mobile has no such gap (this API's
+  /// [FlutterSecureStorage] path is a real OS keychain), so it keeps storing
+  /// it and using it exactly as before.
   Future<void> saveTokens({
     required String accessToken,
     required String refreshToken,
   }) async {
     await Future.wait([
       _write(_accessTokenKey, accessToken),
-      _write(_refreshTokenKey, refreshToken),
+      if (!kIsWeb) _write(_refreshTokenKey, refreshToken),
     ]);
   }
 
   Future<String?> getAccessToken() => _readSafe(_accessTokenKey);
+
+  /// Always null on web by design — see [saveTokens].
   Future<String?> getRefreshToken() => _readSafe(_refreshTokenKey);
 
   Future<void> saveUser(UserModel user) async {

@@ -73,6 +73,11 @@ class AuthRepository with ApiErrorMapper {
     await Future.wait([
       _tokenStorage.clearAll(),
       _googleSignIn.signOut(),
+      // Best-effort: on web this clears the HttpOnly refresh cookie
+      // server-side (nothing client-side can touch it directly). A failure
+      // here shouldn't block local logout — worst case the cookie outlives
+      // the session until it naturally expires.
+      _authApi.logout().catchError((_) {}),
     ]);
   }
 
