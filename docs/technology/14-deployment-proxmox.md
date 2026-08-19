@@ -17,7 +17,7 @@ Internet → pfSense (port forward 443) → Nginx container (TLS termination)
 
 [pfSense](https://www.pfsense.org) is the router/firewall software forwarding external port 443 to the Proxmox VM's Nginx container — this is the layer that makes the app reachable from the public internet at all, distinct from anything in this repo. Certificates are issued and renewed by [certbot](https://certbot.eff.org) running on the host (not in a container per the current compose file — `/etc/letsencrypt` is mounted **read-only** into the `nginx` container from the host filesystem), so Nginx just consumes certs certbot already wrote to disk; it doesn't request them itself.
 
-Deploying a change means, on that host: pulling the latest code, `flutter build web` (producing the static files Nginx mounts), and `docker compose up --build -d` to rebuild/restart the `api` and `nginx` containers with the new code. There's no CI/CD pipeline described anywhere in this repo yet — this would currently be a manual SSH-in-and-run-commands deploy.
+Deploying a change means, on that host: pulling the latest code, `flutter build web --dart-define=GOOGLE_CLIENT_ID=<web-client-id>` (producing the static files Nginx mounts — the `GOOGLE_CLIENT_ID` dart-define is required or Google Sign-In silently breaks on that build, see [13-google-oauth.md](13-google-oauth.md)), and `docker compose up --build -d` to rebuild/restart the `api` and `nginx` containers with the new code. There's no CI/CD pipeline described anywhere in this repo yet — this would currently be a manual SSH-in-and-run-commands deploy.
 
 ## Where it runs
 

@@ -29,4 +29,10 @@ Google's own OAuth infrastructure handles the actual authentication UI and token
 
 ## Status in this project
 
-Per `spec.md`, `POST /auth/google` and the Flutter-side Google Sign-In button are implemented (Phase 1, marked done), but this doc's setup steps (Cloud Console project, OAuth consent screen, client IDs) are account/config work, not code — worth confirming a real `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` pair is actually in your `.env` and has been exercised with a real Google account, since email/password login is what's been used for testing so far this session.
+A dedicated Web application OAuth client has been created (in the same GCP project as the `rji-home` Firebase project, kept separate from the pre-existing Home Assistant client) and `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` are set in `.env`. Authorized JavaScript origins are configured for local dev (`http://localhost:8765`) and the dev VM (`https://coffeyclub-dev.saloosa.dev`) — no redirect URIs are needed, since `google_sign_in` v6's web implementation is a client-side popup flow (Google Identity Services), not a server-redirect flow.
+
+The client ID reaches the Flutter web build via `--dart-define=GOOGLE_CLIENT_ID=...`, wired into `.claude/launch.json` for local dev; a production/dev-VM `flutter build web` needs the same flag passed manually (see [14-deployment-proxmox.md](14-deployment-proxmox.md)).
+
+`AuthRepository`'s `GoogleSignIn` also sets `serverClientId` (in addition to `clientId`) to the same Web client ID, so Android/iOS ID tokens carry the right audience for backend verification — `clientId` alone only takes effect on web.
+
+Not yet verified end-to-end with a real Google account sign-in — worth clicking through the actual flow once a backend + web build are running.

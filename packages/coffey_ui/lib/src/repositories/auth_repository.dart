@@ -20,6 +20,9 @@ class AuthRepository with ApiErrorMapper {
     scopes: ['email'],
     // Set GOOGLE_CLIENT_ID via --dart-define for web support.
     clientId: const String.fromEnvironment('GOOGLE_CLIENT_ID'),
+    // Ensures the ID token's audience matches the backend's GOOGLE_CLIENT_ID
+    // on Android/iOS too, where `clientId` above is otherwise ignored.
+    serverClientId: const String.fromEnvironment('GOOGLE_CLIENT_ID'),
   );
 
   Future<UserModel> login({
