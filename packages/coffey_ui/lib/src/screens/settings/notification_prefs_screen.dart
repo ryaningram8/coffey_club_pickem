@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../blocs/notification_prefs/notification_prefs_cubit.dart';
 import '../../repositories/notification_repository.dart';
+import '../../widgets/error_state_view.dart';
+import '../../widgets/responsive_content.dart';
 
 class NotificationPrefsScreen extends StatelessWidget {
   const NotificationPrefsScreen({super.key});
@@ -29,71 +31,92 @@ class _NotificationPrefsView extends StatelessWidget {
       body: BlocConsumer<NotificationPrefsCubit, NotificationPrefsState>(
         listener: (context, state) {
           if (state is NotificationPrefsLoaded && state.errorMessage != null) {
-            ScaffoldMessenger.of(context)
-                .showSnackBar(SnackBar(content: Text(state.errorMessage!)));
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text(state.errorMessage!)));
           }
         },
         builder: (context, state) {
-          if (state is NotificationPrefsInitial || state is NotificationPrefsLoading) {
+          if (state is NotificationPrefsInitial ||
+              state is NotificationPrefsLoading) {
             return const Center(child: CircularProgressIndicator());
           }
           if (state is NotificationPrefsFailure) {
-            return Center(child: Text('Could not load preferences: ${state.message}'));
+            return ErrorStateView(
+              message: 'Could not load preferences: ${state.message}',
+              onRetry: () => context.read<NotificationPrefsCubit>().reload(),
+            );
           }
           final loaded = state as NotificationPrefsLoaded;
           final cubit = context.read<NotificationPrefsCubit>();
           final prefs = loaded.prefs;
 
-          return ListView(
-            children: [
-              const _SectionHeader('Pick Reminders'),
-              SwitchListTile(
-                title: const Text('Remind me to make picks'),
-                value: prefs.pickReminders.enabled,
-                onChanged: cubit.setPickRemindersEnabled,
-              ),
-              SwitchListTile(
-                title: const Text('Push notification'),
-                value: prefs.pickReminders.push,
-                onChanged: prefs.pickReminders.enabled ? cubit.setPickRemindersPush : null,
-              ),
-              SwitchListTile(
-                title: const Text('Email'),
-                value: prefs.pickReminders.email,
-                onChanged: prefs.pickReminders.enabled ? cubit.setPickRemindersEmail : null,
-              ),
-              ListTile(
-                title: const Text('Remind me before deadline'),
-                trailing: DropdownButton<int>(
-                  value: prefs.pickReminders.hoursBeforeDeadline,
-                  items: _reminderTimingOptions
-                      .map((h) => DropdownMenuItem(value: h, child: Text('$h hours')))
-                      .toList(),
+          return ResponsiveContent(
+            child: ListView(
+              children: [
+                const _SectionHeader('Pick Reminders'),
+                SwitchListTile(
+                  title: const Text('Remind me to make picks'),
+                  value: prefs.pickReminders.enabled,
+                  onChanged: cubit.setPickRemindersEnabled,
+                ),
+                SwitchListTile(
+                  title: const Text('Push notification'),
+                  value: prefs.pickReminders.push,
                   onChanged: prefs.pickReminders.enabled
-                      ? (hours) {
-                          if (hours != null) cubit.setHoursBeforeDeadline(hours);
-                        }
+                      ? cubit.setPickRemindersPush
                       : null,
                 ),
-              ),
-              const Divider(),
-              const _SectionHeader('Weekly Results'),
-              SwitchListTile(
-                title: const Text('Notify me when results are final'),
-                value: prefs.resultsNotifications.enabled,
-                onChanged: cubit.setResultsEnabled,
-              ),
-              SwitchListTile(
-                title: const Text('Push notification'),
-                value: prefs.resultsNotifications.push,
-                onChanged: prefs.resultsNotifications.enabled ? cubit.setResultsPush : null,
-              ),
-              SwitchListTile(
-                title: const Text('Email'),
-                value: prefs.resultsNotifications.email,
-                onChanged: prefs.resultsNotifications.enabled ? cubit.setResultsEmail : null,
-              ),
-            ],
+                SwitchListTile(
+                  title: const Text('Email'),
+                  value: prefs.pickReminders.email,
+                  onChanged: prefs.pickReminders.enabled
+                      ? cubit.setPickRemindersEmail
+                      : null,
+                ),
+                ListTile(
+                  title: const Text('Remind me before deadline'),
+                  trailing: DropdownButton<int>(
+                    value: prefs.pickReminders.hoursBeforeDeadline,
+                    items: _reminderTimingOptions
+                        .map(
+                          (h) => DropdownMenuItem(
+                            value: h,
+                            child: Text('$h hours'),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: prefs.pickReminders.enabled
+                        ? (hours) {
+                            if (hours != null)
+                              cubit.setHoursBeforeDeadline(hours);
+                          }
+                        : null,
+                  ),
+                ),
+                const Divider(),
+                const _SectionHeader('Weekly Results'),
+                SwitchListTile(
+                  title: const Text('Notify me when results are final'),
+                  value: prefs.resultsNotifications.enabled,
+                  onChanged: cubit.setResultsEnabled,
+                ),
+                SwitchListTile(
+                  title: const Text('Push notification'),
+                  value: prefs.resultsNotifications.push,
+                  onChanged: prefs.resultsNotifications.enabled
+                      ? cubit.setResultsPush
+                      : null,
+                ),
+                SwitchListTile(
+                  title: const Text('Email'),
+                  value: prefs.resultsNotifications.email,
+                  onChanged: prefs.resultsNotifications.enabled
+                      ? cubit.setResultsEmail
+                      : null,
+                ),
+              ],
+            ),
           );
         },
       ),

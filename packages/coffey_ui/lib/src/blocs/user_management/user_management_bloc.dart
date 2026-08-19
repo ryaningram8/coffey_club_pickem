@@ -9,13 +9,14 @@ part 'user_management_bloc.freezed.dart';
 part 'user_management_event.dart';
 part 'user_management_state.dart';
 
-class UserManagementBloc extends Bloc<UserManagementEvent, UserManagementState> {
+class UserManagementBloc
+    extends Bloc<UserManagementEvent, UserManagementState> {
   UserManagementBloc({
     required AdminUsersRepository adminUsersRepository,
     required SeasonRepository seasonRepository,
-  })  : _adminUsersRepository = adminUsersRepository,
-        _seasonRepository = seasonRepository,
-        super(const UserManagementState.initial()) {
+  }) : _adminUsersRepository = adminUsersRepository,
+       _seasonRepository = seasonRepository,
+       super(const UserManagementState.initial()) {
     on<UserManagementStarted>(_onStarted);
     on<UserManagementPoolFilterChanged>(_onPoolFilterChanged);
     on<UserManagementRoleChangeRequested>(_onRoleChangeRequested);
@@ -54,7 +55,12 @@ class UserManagementBloc extends Bloc<UserManagementEvent, UserManagementState> 
   ) async {
     final current = state;
     if (current is! UserManagementLoaded) return;
-    emit(current.copyWith(mutatingKey: '${event.userId}:${event.seasonId}', errorMessage: null));
+    emit(
+      current.copyWith(
+        mutatingKey: '${event.userId}:${event.seasonId}',
+        errorMessage: null,
+      ),
+    );
     try {
       await _adminUsersRepository.updateMembershipRole(
         userId: event.userId,
@@ -74,7 +80,12 @@ class UserManagementBloc extends Bloc<UserManagementEvent, UserManagementState> 
   ) async {
     final current = state;
     if (current is! UserManagementLoaded) return;
-    emit(current.copyWith(mutatingKey: '${event.userId}:${event.seasonId}', errorMessage: null));
+    emit(
+      current.copyWith(
+        mutatingKey: '${event.userId}:${event.seasonId}',
+        errorMessage: null,
+      ),
+    );
     try {
       await _adminUsersRepository.removeMembership(
         userId: event.userId,

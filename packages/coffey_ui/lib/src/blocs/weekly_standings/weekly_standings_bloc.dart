@@ -10,15 +10,16 @@ part 'weekly_standings_bloc.freezed.dart';
 part 'weekly_standings_event.dart';
 part 'weekly_standings_state.dart';
 
-class WeeklyStandingsBloc extends Bloc<WeeklyStandingsEvent, WeeklyStandingsState> {
+class WeeklyStandingsBloc
+    extends Bloc<WeeklyStandingsEvent, WeeklyStandingsState> {
   WeeklyStandingsBloc({
     required WeekRepository weekRepository,
     required StandingsRepository standingsRepository,
     required String weekId,
-  })  : _weekRepository = weekRepository,
-        _standingsRepository = standingsRepository,
-        _weekId = weekId,
-        super(const WeeklyStandingsState.initial()) {
+  }) : _weekRepository = weekRepository,
+       _standingsRepository = standingsRepository,
+       _weekId = weekId,
+       super(const WeeklyStandingsState.initial()) {
     on<WeeklyStandingsStarted>(_onStarted);
     on<WeeklyStandingsPlayerToggled>(_onPlayerToggled);
   }
@@ -36,11 +37,13 @@ class WeeklyStandingsBloc extends Bloc<WeeklyStandingsEvent, WeeklyStandingsStat
       final week = await _weekRepository.getWeek(_weekId);
       final standings = await _standingsRepository.getWeekStandings(_weekId);
       final picksSummary = await _standingsRepository.getPicksSummary(_weekId);
-      emit(WeeklyStandingsState.loaded(
-        week: week,
-        standings: standings,
-        picksSummary: picksSummary,
-      ));
+      emit(
+        WeeklyStandingsState.loaded(
+          week: week,
+          standings: standings,
+          picksSummary: picksSummary,
+        ),
+      );
     } catch (e) {
       emit(WeeklyStandingsState.failure(e.toString()));
     }

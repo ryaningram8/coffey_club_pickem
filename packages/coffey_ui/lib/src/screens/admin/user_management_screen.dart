@@ -5,6 +5,9 @@ import '../../models/admin_membership_model.dart';
 import '../../models/admin_user_model.dart';
 import '../../repositories/admin_users_repository.dart';
 import '../../repositories/season_repository.dart';
+import '../../widgets/empty_state_view.dart';
+import '../../widgets/error_state_view.dart';
+import '../../widgets/responsive_content.dart';
 
 class UserManagementScreen extends StatelessWidget {
   const UserManagementScreen({super.key});
@@ -31,22 +34,30 @@ class _UserManagementView extends StatelessWidget {
       body: BlocConsumer<UserManagementBloc, UserManagementState>(
         listener: (context, state) {
           if (state is UserManagementLoaded && state.errorMessage != null) {
-            ScaffoldMessenger.of(context)
-                .showSnackBar(SnackBar(content: Text(state.errorMessage!)));
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text(state.errorMessage!)));
           }
         },
         builder: (context, state) {
-          if (state is UserManagementInitial || state is UserManagementLoading) {
+          if (state is UserManagementInitial ||
+              state is UserManagementLoading) {
             return const Center(child: CircularProgressIndicator());
           }
           if (state is UserManagementFailure) {
-            return Center(child: Text('Could not load users: ${state.message}'));
+            return ErrorStateView(
+              message: 'Could not load users: ${state.message}',
+              onRetry: () => context.read<UserManagementBloc>().add(
+                const UserManagementEvent.started(),
+              ),
+            );
           }
           if (state is UserManagementLoaded) {
             final rows = <_MembershipRow>[
               for (final user in state.users)
                 for (final membership in user.memberships)
-                  if (state.poolFilter == null || membership.seasonId == state.poolFilter)
+                  if (state.poolFilter == null ||
+                      membership.seasonId == state.poolFilter)
                     _MembershipRow(user: user, membership: membership),
             ];
 
@@ -61,7 +72,10 @@ class _UserManagementView extends StatelessWidget {
                       border: OutlineInputBorder(),
                     ),
                     items: [
-                      const DropdownMenuItem(value: null, child: Text('All pools')),
+                      const DropdownMenuItem(
+                        value: null,
+                        child: Text('All pools'),
+                      ),
                       for (final pool in state.pools)
                         DropdownMenuItem(
                           value: pool.id,
@@ -75,18 +89,24 @@ class _UserManagementView extends StatelessWidget {
                 ),
                 Expanded(
                   child: rows.isEmpty
-                      ? const Center(child: Text('No members yet for this pool.'))
-                      : ListView.builder(
-                          padding: const EdgeInsets.symmetric(vertical: 8),
-                          itemCount: rows.length,
-                          itemBuilder: (context, index) {
-                            final row = rows[index];
-                            final key = '${row.user.id}:${row.membership.seasonId}';
-                            return _MembershipTile(
-                              row: row,
-                              isMutating: state.mutatingKey == key,
-                            );
-                          },
+                      ? const EmptyStateView(
+                          icon: Icons.people_outline,
+                          message: 'No members yet for this pool.',
+                        )
+                      : ResponsiveContent(
+                          child: ListView.builder(
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                            itemCount: rows.length,
+                            itemBuilder: (context, index) {
+                              final row = rows[index];
+                              final key =
+                                  '${row.user.id}:${row.membership.seasonId}';
+                              return _MembershipTile(
+                                row: row,
+                                isMutating: state.mutatingKey == key,
+                              );
+                            },
+                          ),
                         ),
                 ),
               ],
@@ -131,17 +151,20 @@ class _MembershipTile extends StatelessWidget {
                 SegmentedButton<String>(
                   segments: const [
                     ButtonSegment(value: 'player', label: Text('Player')),
-                    ButtonSegment(value: 'commissioner', label: Text('Commissioner')),
+                    ButtonSegment(
+                      value: 'commissioner',
+                      label: Text('Commissioner'),
+                    ),
                   ],
                   selected: {membership.role},
                   onSelectionChanged: (selection) {
                     context.read<UserManagementBloc>().add(
-                          UserManagementEvent.roleChangeRequested(
-                            userId: user.id,
-                            seasonId: membership.seasonId,
-                            role: selection.first,
-                          ),
-                        );
+                      UserManagementEvent.roleChangeRequested(
+                        userId: user.id,
+                        seasonId: membership.seasonId,
+                        role: selection.first,
+                      ),
+                    );
                   },
                 ),
                 IconButton(

@@ -14,9 +14,9 @@ class InvitationManagementBloc
   InvitationManagementBloc({
     required SeasonRepository seasonRepository,
     required InvitationRepository invitationRepository,
-  })  : _seasonRepository = seasonRepository,
-        _invitationRepository = invitationRepository,
-        super(const InvitationManagementState.initial()) {
+  }) : _seasonRepository = seasonRepository,
+       _invitationRepository = invitationRepository,
+       super(const InvitationManagementState.initial()) {
     on<InvitationManagementStarted>(_onStarted);
     on<InvitationManagementSeasonSelected>(_onSeasonSelected);
     on<InvitationManagementCodeGenerateRequested>(_onCodeGenerateRequested);
@@ -36,7 +36,9 @@ class InvitationManagementBloc
         emit(const InvitationManagementState.noSeasons());
         return;
       }
-      final invitations = await _invitationRepository.getInvitations(seasons.first.id);
+      final invitations = await _invitationRepository.getInvitations(
+        seasons.first.id,
+      );
       emit(
         InvitationManagementState.loaded(
           seasons: seasons,
@@ -56,7 +58,9 @@ class InvitationManagementBloc
     final current = state;
     if (current is! InvitationManagementLoaded) return;
     try {
-      final invitations = await _invitationRepository.getInvitations(event.seasonId);
+      final invitations = await _invitationRepository.getInvitations(
+        event.seasonId,
+      );
       emit(
         current.copyWith(
           selectedSeasonId: event.seasonId,
@@ -82,7 +86,9 @@ class InvitationManagementBloc
         count: event.count,
         expiresAt: event.expiresAt,
       );
-      final invitations = await _invitationRepository.getInvitations(current.selectedSeasonId);
+      final invitations = await _invitationRepository.getInvitations(
+        current.selectedSeasonId,
+      );
       emit(current.copyWith(invitations: invitations, isGenerating: false));
     } catch (e) {
       emit(InvitationManagementState.failure(e.toString()));

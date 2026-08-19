@@ -3,7 +3,10 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../blocs/commissioner/commissioner_bloc.dart';
 import '../../blocs/selected_pool/selected_pool_cubit.dart';
+import '../../models/season_model.dart';
 import '../../repositories/season_repository.dart';
+import '../../widgets/error_state_view.dart';
+import '../../widgets/responsive_content.dart';
 
 class CommissionerHomeScreen extends StatelessWidget {
   const CommissionerHomeScreen({super.key});
@@ -14,21 +17,23 @@ class CommissionerHomeScreen extends StatelessWidget {
     // Home screen's Commissioner entry point is visible for it (see
     // home_screen.dart), so a loaded selection is always expected here.
     final poolState = context.read<SelectedPoolCubit>().state;
-    final season = (poolState as SelectedPoolLoaded)
-        .pools
-        .firstWhere((p) => p.id == poolState.selectedPoolId);
+    final season = (poolState as SelectedPoolLoaded).pools.firstWhere(
+      (p) => p.id == poolState.selectedPoolId,
+    );
 
     return BlocProvider(
-      create: (context) => CommissionerBloc(
-        seasonRepository: context.read<SeasonRepository>(),
-      )..add(CommissionerEvent.started(season: season)),
-      child: const _CommissionerHomeView(),
+      create: (context) =>
+          CommissionerBloc(seasonRepository: context.read<SeasonRepository>())
+            ..add(CommissionerEvent.started(season: season)),
+      child: _CommissionerHomeView(season: season),
     );
   }
 }
 
 class _CommissionerHomeView extends StatelessWidget {
-  const _CommissionerHomeView();
+  const _CommissionerHomeView({required this.season});
+
+  final SeasonModel season;
 
   @override
   Widget build(BuildContext context) {
@@ -42,8 +47,9 @@ class _CommissionerHomeView extends StatelessWidget {
       body: BlocConsumer<CommissionerBloc, CommissionerState>(
         listener: (context, state) {
           if (state is CommissionerFailure) {
-            ScaffoldMessenger.of(context)
-                .showSnackBar(SnackBar(content: Text(state.message)));
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text(state.message)));
           }
         },
         builder: (context, state) {
@@ -51,23 +57,33 @@ class _CommissionerHomeView extends StatelessWidget {
             return const Center(child: CircularProgressIndicator());
           }
           if (state is CommissionerFailure) {
-            return const Center(child: Text('Something went wrong loading weeks.'));
+            return ErrorStateView(
+              message: 'Something went wrong loading weeks.',
+              onRetry: () => context.read<CommissionerBloc>().add(
+                CommissionerEvent.started(season: season),
+              ),
+            );
           }
           if (state is CommissionerLoaded) {
             final season = state.season;
             final weeks = state.weeks;
             if (weeks.isEmpty) {
               return Center(
-                child: Text('No weeks yet for ${season.name}. Tap + to create one.'),
+                child: Text(
+                  'No weeks yet for ${season.name}. Tap + to create one.',
+                ),
               );
             }
-            return CustomScrollView(
-              slivers: [
-                SliverPadding(
-                  padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-                  sliver: SliverList(
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) {
+            return ResponsiveContent(
+              child: CustomScrollView(
+                slivers: [
+                  SliverPadding(
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 8,
+                      horizontal: 4,
+                    ),
+                    sliver: SliverList(
+                      delegate: SliverChildBuilderDelegate((context, index) {
                         final week = weeks[index];
                         return ListTile(
                           title: Text(week.label),
@@ -80,12 +96,11 @@ class _CommissionerHomeView extends StatelessWidget {
                             pathParameters: {'weekId': week.id},
                           ),
                         );
-                      },
-                      childCount: weeks.length,
+                      }, childCount: weeks.length),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             );
           }
           return const SizedBox.shrink();
@@ -123,7 +138,9 @@ class _CommissionerHomeView extends StatelessWidget {
                   ),
                   TextField(
                     controller: labelController,
-                    decoration: const InputDecoration(labelText: 'Label (e.g. Week 7)'),
+                    decoration: const InputDecoration(
+                      labelText: 'Label (e.g. Week 7)',
+                    ),
                   ),
                   const SizedBox(height: 8),
                   Row(
@@ -141,7 +158,9 @@ class _CommissionerHomeView extends StatelessWidget {
                             context: dialogContext,
                             initialDate: DateTime.now(),
                             firstDate: DateTime.now(),
-                            lastDate: DateTime.now().add(const Duration(days: 365)),
+                            lastDate: DateTime.now().add(
+                              const Duration(days: 365),
+                            ),
                           );
                           if (picked != null) setState(() => deadline = picked);
                         },

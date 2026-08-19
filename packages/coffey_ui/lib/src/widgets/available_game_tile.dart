@@ -18,7 +18,8 @@ class AvailableGameTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final time = game.gameTime.toLocal();
-    final dateLabel = '${time.month}/${time.day} '
+    final dateLabel =
+        '${time.month}/${time.day} '
         '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
 
     return CheckboxListTile(

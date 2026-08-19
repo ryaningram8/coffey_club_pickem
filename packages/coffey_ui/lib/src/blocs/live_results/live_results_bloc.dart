@@ -15,10 +15,10 @@ class LiveResultsBloc extends Bloc<LiveResultsEvent, LiveResultsState> {
     required WeekRepository weekRepository,
     required StandingsRepository standingsRepository,
     required String weekId,
-  })  : _weekRepository = weekRepository,
-        _standingsRepository = standingsRepository,
-        _weekId = weekId,
-        super(const LiveResultsState.initial()) {
+  }) : _weekRepository = weekRepository,
+       _standingsRepository = standingsRepository,
+       _weekId = weekId,
+       super(const LiveResultsState.initial()) {
     on<LiveResultsStarted>(_onStarted);
     on<LiveResultsRefreshed>(_onRefreshed);
     on<LiveResultsStopped>(_onStopped);
@@ -35,7 +35,10 @@ class LiveResultsBloc extends Bloc<LiveResultsEvent, LiveResultsState> {
   ) async {
     emit(const LiveResultsState.loading());
     await _load(emit);
-    _timer = Timer.periodic(const Duration(seconds: 15), (_) => add(const LiveResultsEvent.refreshed()));
+    _timer = Timer.periodic(
+      const Duration(seconds: 15),
+      (_) => add(const LiveResultsEvent.refreshed()),
+    );
   }
 
   Future<void> _onRefreshed(
@@ -50,15 +53,20 @@ class LiveResultsBloc extends Bloc<LiveResultsEvent, LiveResultsState> {
     _timer = null;
   }
 
-  Future<void> _load(Emitter<LiveResultsState> emit, {bool silently = false}) async {
+  Future<void> _load(
+    Emitter<LiveResultsState> emit, {
+    bool silently = false,
+  }) async {
     try {
       final week = await _weekRepository.getWeek(_weekId);
       final picksSummary = await _standingsRepository.getPicksSummary(_weekId);
-      emit(LiveResultsState.loaded(
-        week: week,
-        picksSummary: picksSummary,
-        lastUpdated: DateTime.now(),
-      ));
+      emit(
+        LiveResultsState.loaded(
+          week: week,
+          picksSummary: picksSummary,
+          lastUpdated: DateTime.now(),
+        ),
+      );
     } catch (e) {
       // A background refresh failing shouldn't blow away a previously
       // loaded screen — only surface failure on the initial load.

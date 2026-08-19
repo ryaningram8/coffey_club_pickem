@@ -18,9 +18,9 @@ class SelectedPoolCubit extends Cubit<SelectedPoolState> {
   SelectedPoolCubit({
     required SeasonRepository seasonRepository,
     required InvitationRepository invitationRepository,
-  })  : _seasonRepository = seasonRepository,
-        _invitationRepository = invitationRepository,
-        super(const SelectedPoolState.initial());
+  }) : _seasonRepository = seasonRepository,
+       _invitationRepository = invitationRepository,
+       super(const SelectedPoolState.initial());
 
   final SeasonRepository _seasonRepository;
   final InvitationRepository _invitationRepository;
@@ -42,7 +42,9 @@ class SelectedPoolCubit extends Cubit<SelectedPoolState> {
       }
       final prefs = await SharedPreferences.getInstance();
       final storedId = prefs.getString(_prefsKey);
-      final selectedId = pools.any((p) => p.id == storedId) ? storedId! : pools.first.id;
+      final selectedId = pools.any((p) => p.id == storedId)
+          ? storedId!
+          : pools.first.id;
       emit(SelectedPoolState.loaded(pools: pools, selectedPoolId: selectedId));
       await prefs.setString(_prefsKey, selectedId);
     } catch (e) {
@@ -78,7 +80,9 @@ class SelectedPoolCubit extends Cubit<SelectedPoolState> {
     try {
       final result = await _invitationRepository.redeemInvitation(code);
       final pools = await _fetchPools();
-      emit(SelectedPoolState.loaded(pools: pools, selectedPoolId: result.seasonId));
+      emit(
+        SelectedPoolState.loaded(pools: pools, selectedPoolId: result.seasonId),
+      );
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(_prefsKey, result.seasonId);
     } catch (e) {
@@ -88,6 +92,8 @@ class SelectedPoolCubit extends Cubit<SelectedPoolState> {
   }
 
   Future<List<SeasonModel>> _fetchPools() {
-    return _isAdmin ? _seasonRepository.getSeasons() : _seasonRepository.getMySeasons();
+    return _isAdmin
+        ? _seasonRepository.getSeasons()
+        : _seasonRepository.getMySeasons();
   }
 }

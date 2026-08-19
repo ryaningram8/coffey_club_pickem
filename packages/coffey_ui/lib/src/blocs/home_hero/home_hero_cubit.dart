@@ -27,13 +27,13 @@ class HomeHeroCubit extends Cubit<HomeHeroState> {
     required PickRepository pickRepository,
     required String currentUserId,
     required String seasonId,
-  })  : _weekRepository = weekRepository,
-        _seasonRepository = seasonRepository,
-        _standingsRepository = standingsRepository,
-        _pickRepository = pickRepository,
-        _currentUserId = currentUserId,
-        _seasonId = seasonId,
-        super(const HomeHeroState.initial()) {
+  }) : _weekRepository = weekRepository,
+       _seasonRepository = seasonRepository,
+       _standingsRepository = standingsRepository,
+       _pickRepository = pickRepository,
+       _currentUserId = currentUserId,
+       _seasonId = seasonId,
+       super(const HomeHeroState.initial()) {
     load();
   }
 
@@ -84,13 +84,16 @@ class HomeHeroCubit extends Cubit<HomeHeroState> {
   Future<HomeHeroState> _loadLive(WeekModel week) async {
     final summary = await _standingsRepository.getPicksSummary(week.id);
     final myEntry = _findEntry(summary, _currentUserId);
-    final myCorrect = myEntry?.picks.where((p) => p.isCorrect == true).length ?? 0;
+    final myCorrect =
+        myEntry?.picks.where((p) => p.isCorrect == true).length ?? 0;
     final lastCompleted = await _findMostRecentCompletedWeek();
     return HomeHeroState.live(
       week: week,
       myCorrect: myCorrect,
       gamesFinal: week.games.where((g) => g.status == 'final').length,
-      gamesInProgress: week.games.where((g) => g.status == 'in_progress').length,
+      gamesInProgress: week.games
+          .where((g) => g.status == 'in_progress')
+          .length,
       totalGames: week.games.length,
       lastWeekLabel: lastCompleted?.label,
       lastWeekMessage: lastCompleted?.commissionerMessage,
@@ -121,14 +124,20 @@ class HomeHeroCubit extends Cubit<HomeHeroState> {
     return completed.isEmpty ? null : completed.first;
   }
 
-  PickSummaryEntryModel? _findEntry(List<PickSummaryEntryModel> entries, String userId) {
+  PickSummaryEntryModel? _findEntry(
+    List<PickSummaryEntryModel> entries,
+    String userId,
+  ) {
     for (final entry in entries) {
       if (entry.userId == userId) return entry;
     }
     return null;
   }
 
-  WeekStandingModel? _findStanding(List<WeekStandingModel> standings, String userId) {
+  WeekStandingModel? _findStanding(
+    List<WeekStandingModel> standings,
+    String userId,
+  ) {
     for (final standing in standings) {
       if (standing.userId == userId) return standing;
     }

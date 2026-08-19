@@ -19,7 +19,8 @@ class PickGameCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final time = game.gameTime.toLocal();
-    final timeLabel = '${_weekday(time.weekday)} '
+    final timeLabel =
+        '${_weekday(time.weekday)} '
         '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
 
     return Card(
@@ -39,8 +40,9 @@ class PickGameCard extends StatelessWidget {
                       if (game.spread != null) 'Spread ${game.spread}',
                       if (game.overUnder != null) 'O/U ${game.overUnder}',
                     ].join(' · '),
-                    style: theme.textTheme.labelMedium
-                        ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                    style: theme.textTheme.labelMedium?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
                   ),
               ],
             ),
@@ -80,7 +82,11 @@ class PickGameCard extends StatelessWidget {
 }
 
 class _TeamButton extends StatelessWidget {
-  const _TeamButton({required this.label, required this.selected, required this.onTap});
+  const _TeamButton({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
 
   final String label;
   final bool selected;
@@ -95,7 +101,9 @@ class _TeamButton extends StatelessWidget {
         backgroundColor: selected ? theme.colorScheme.primaryContainer : null,
         foregroundColor: selected ? theme.colorScheme.onPrimaryContainer : null,
         side: BorderSide(
-          color: selected ? theme.colorScheme.primary : theme.colorScheme.outline,
+          color: selected
+              ? theme.colorScheme.primary
+              : theme.colorScheme.outline,
           width: selected ? 2 : 1,
         ),
         padding: const EdgeInsets.symmetric(vertical: 14),

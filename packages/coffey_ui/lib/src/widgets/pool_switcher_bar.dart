@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../blocs/auth/auth_bloc.dart';
 import '../blocs/selected_pool/selected_pool_cubit.dart';
 
 /// Header pool switcher — shows the currently selected pool, lets the user
@@ -19,7 +20,9 @@ class PoolSwitcherBar extends StatelessWidget {
       child: BlocBuilder<SelectedPoolCubit, SelectedPoolState>(
         builder: (context, state) {
           if (state is SelectedPoolLoaded) {
-            final selected = state.pools.firstWhere((p) => p.id == state.selectedPoolId);
+            final selected = state.pools.firstWhere(
+              (p) => p.id == state.selectedPoolId,
+            );
             return InkWell(
               onTap: () => _showPoolPicker(context, state),
               child: Row(
@@ -47,10 +50,29 @@ class PoolSwitcherBar extends StatelessWidget {
           }
           if (state is SelectedPoolFailure) {
             return Center(
-              child: Text(
-                'Could not load pools: ${state.message}',
-                style: TextStyle(color: Theme.of(context).colorScheme.error),
-                overflow: TextOverflow.ellipsis,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Flexible(
+                    child: Text(
+                      'Could not load pools: ${state.message}',
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.error,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: () {
+                      final authState = context.read<AuthBloc>().state;
+                      final isAdmin =
+                          authState is AuthAuthenticated &&
+                          authState.user.isAdmin;
+                      context.read<SelectedPoolCubit>().load(isAdmin: isAdmin);
+                    },
+                    child: const Text('Retry'),
+                  ),
+                ],
               ),
             );
           }
@@ -73,7 +95,9 @@ class PoolSwitcherBar extends StatelessWidget {
                 ListTile(
                   title: Text('${pool.name} (${pool.year})'),
                   subtitle: Text(pool.status.replaceAll('_', ' ')),
-                  trailing: pool.id == state.selectedPoolId ? const Icon(Icons.check) : null,
+                  trailing: pool.id == state.selectedPoolId
+                      ? const Icon(Icons.check)
+                      : null,
                   onTap: () {
                     cubit.selectPool(pool.id);
                     Navigator.of(sheetContext).pop();
@@ -119,7 +143,9 @@ class PoolSwitcherBar extends StatelessWidget {
               ),
               actions: [
                 TextButton(
-                  onPressed: isSubmitting ? null : () => Navigator.of(dialogContext).pop(),
+                  onPressed: isSubmitting
+                      ? null
+                      : () => Navigator.of(dialogContext).pop(),
                   child: const Text('Cancel'),
                 ),
                 FilledButton(
@@ -134,7 +160,8 @@ class PoolSwitcherBar extends StatelessWidget {
                           });
                           try {
                             await cubit.joinPool(code);
-                            if (dialogContext.mounted) Navigator.of(dialogContext).pop();
+                            if (dialogContext.mounted)
+                              Navigator.of(dialogContext).pop();
                           } catch (e) {
                             setState(() {
                               isSubmitting = false;

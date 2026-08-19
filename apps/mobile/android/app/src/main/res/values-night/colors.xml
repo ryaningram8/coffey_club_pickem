@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Dark-mode splash backdrop, so the white used in values/colors.xml
+         doesn't flash on devices in system dark mode. -->
+    <color name="launch_background">#121212</color>
+</resources>

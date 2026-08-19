@@ -32,7 +32,8 @@ class HomeScreen extends StatelessWidget {
         }
       }
     }
-    final isCommissioner = (user?.isAdmin ?? false) || selectedPool?.myRole == 'commissioner';
+    final isCommissioner =
+        (user?.isAdmin ?? false) || selectedPool?.myRole == 'commissioner';
 
     return Scaffold(
       appBar: AppBar(
@@ -65,7 +66,8 @@ class HomeScreen extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.logout),
             tooltip: 'Log out',
-            onPressed: () => context.read<AuthBloc>().add(const AuthEvent.logoutRequested()),
+            onPressed: () =>
+                context.read<AuthBloc>().add(const AuthEvent.logoutRequested()),
           ),
         ],
         bottom: user == null
@@ -76,7 +78,12 @@ class HomeScreen extends StatelessWidget {
               ),
       ),
       body: user == null || poolState is! SelectedPoolLoaded
-          ? _HomeBody(user: user, seasonId: null, isCommissioner: isCommissioner)
+          ? _HomeBody(
+              user: user,
+              seasonId: null,
+              isCommissioner: isCommissioner,
+              poolState: poolState,
+            )
           : BlocProvider(
               key: ValueKey(poolState.selectedPoolId),
               create: (context) => HomeHeroCubit(
@@ -91,6 +98,7 @@ class HomeScreen extends StatelessWidget {
                 user: user,
                 seasonId: poolState.selectedPoolId,
                 isCommissioner: isCommissioner,
+                poolState: poolState,
               ),
             ),
     );
@@ -102,6 +110,7 @@ class _HomeBody extends StatelessWidget {
     required this.user,
     required this.seasonId,
     required this.isCommissioner,
+    required this.poolState,
   });
 
   final UserModel? user;
@@ -113,6 +122,12 @@ class _HomeBody extends StatelessWidget {
   final String? seasonId;
 
   final bool isCommissioner;
+
+  /// Drives which placeholder copy shows below when [seasonId] is null —
+  /// distinguishes "still loading" (say nothing, the header has no message
+  /// yet either) from "no pools" / "failed" (the header already explains
+  /// why, so this stays a short, non-duplicated nudge).
+  final SelectedPoolState poolState;
 
   @override
   Widget build(BuildContext context) {
@@ -139,19 +154,22 @@ class _HomeBody extends StatelessWidget {
                 ),
                 const SizedBox(height: 16),
                 FilledButton.icon(
-                  onPressed: () => _openCurrentWeek(context, seasonId!, 'pickSheet'),
+                  onPressed: () =>
+                      _openCurrentWeek(context, seasonId!, 'pickSheet'),
                   icon: const Icon(Icons.checklist),
                   label: const Text("This Week's Picks"),
                 ),
                 const SizedBox(height: 12),
                 OutlinedButton.icon(
-                  onPressed: () => _openCurrentWeek(context, seasonId!, 'liveResults'),
+                  onPressed: () =>
+                      _openCurrentWeek(context, seasonId!, 'liveResults'),
                   icon: const Icon(Icons.live_tv_outlined),
                   label: const Text('Live Results'),
                 ),
                 const SizedBox(height: 12),
                 OutlinedButton.icon(
-                  onPressed: () => _openCurrentWeek(context, seasonId!, 'weeklyStandings'),
+                  onPressed: () =>
+                      _openCurrentWeek(context, seasonId!, 'weeklyStandings'),
                   icon: const Icon(Icons.leaderboard_outlined),
                   label: const Text('Weekly Standings'),
                 ),
@@ -169,9 +187,17 @@ class _HomeBody extends StatelessWidget {
                     label: const Text('Commissioner Dashboard'),
                   ),
                 ],
+              ] else if (user != null && poolState is SelectedPoolLoading) ...[
+                const SizedBox(height: 24),
+                const Center(child: CircularProgressIndicator()),
+              ] else if (user != null && poolState is SelectedPoolNoPools) ...[
+                const Text(
+                  'Join a pool above to get started.',
+                  textAlign: TextAlign.center,
+                ),
               ] else if (user != null) ...[
                 const Text(
-                  'Pick a pool above to get started.',
+                  "Couldn't load your pools — see above to retry.",
                   textAlign: TextAlign.center,
                 ),
               ],
@@ -191,19 +217,27 @@ class _HomeBody extends StatelessWidget {
     return SafeArea(child: content);
   }
 
-  Future<void> _openCurrentWeek(BuildContext context, String seasonId, String routeName) async {
+  Future<void> _openCurrentWeek(
+    BuildContext context,
+    String seasonId,
+    String routeName,
+  ) async {
     final weekRepository = context.read<WeekRepository>();
     final messenger = ScaffoldMessenger.of(context);
     try {
       final week = await weekRepository.getCurrentWeek(seasonId);
       if (week == null) {
-        messenger.showSnackBar(const SnackBar(content: Text('No active week yet.')));
+        messenger.showSnackBar(
+          const SnackBar(content: Text('No active week yet.')),
+        );
         return;
       }
       if (!context.mounted) return;
       context.pushNamed(routeName, pathParameters: {'weekId': week.id});
     } catch (e) {
-      messenger.showSnackBar(SnackBar(content: Text('Could not load current week: $e')));
+      messenger.showSnackBar(
+        SnackBar(content: Text('Could not load current week: $e')),
+      );
     }
   }
 }

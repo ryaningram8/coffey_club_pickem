@@ -13,10 +13,10 @@ class PayoutsBloc extends Bloc<PayoutsEvent, PayoutsState> {
     required StandingsRepository standingsRepository,
     required PayoutRepository payoutRepository,
     required String weekId,
-  })  : _standingsRepository = standingsRepository,
-        _payoutRepository = payoutRepository,
-        _weekId = weekId,
-        super(const PayoutsState.initial()) {
+  }) : _standingsRepository = standingsRepository,
+       _payoutRepository = payoutRepository,
+       _weekId = weekId,
+       super(const PayoutsState.initial()) {
     on<PayoutsStarted>(_onStarted);
     on<PayoutsPaidToggled>(_onPaidToggled);
   }
@@ -25,7 +25,10 @@ class PayoutsBloc extends Bloc<PayoutsEvent, PayoutsState> {
   final PayoutRepository _payoutRepository;
   final String _weekId;
 
-  Future<void> _onStarted(PayoutsStarted event, Emitter<PayoutsState> emit) async {
+  Future<void> _onStarted(
+    PayoutsStarted event,
+    Emitter<PayoutsState> emit,
+  ) async {
     emit(const PayoutsState.loading());
     try {
       final standings = await _standingsRepository.getWeekStandings(_weekId);

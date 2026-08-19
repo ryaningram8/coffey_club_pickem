@@ -10,8 +10,8 @@ part 'commissioner_state.dart';
 
 class CommissionerBloc extends Bloc<CommissionerEvent, CommissionerState> {
   CommissionerBloc({required SeasonRepository seasonRepository})
-      : _seasonRepository = seasonRepository,
-        super(const CommissionerState.initial()) {
+    : _seasonRepository = seasonRepository,
+      super(const CommissionerState.initial()) {
     on<CommissionerStarted>(_onStarted);
     on<CommissionerWeekCreateRequested>(_onWeekCreateRequested);
   }
@@ -46,7 +46,10 @@ class CommissionerBloc extends Bloc<CommissionerEvent, CommissionerState> {
     }
   }
 
-  Future<void> _loadWeeks(Emitter<CommissionerState> emit, SeasonModel season) async {
+  Future<void> _loadWeeks(
+    Emitter<CommissionerState> emit,
+    SeasonModel season,
+  ) async {
     try {
       final weeks = await _seasonRepository.getWeeks(season.id);
       emit(CommissionerState.loaded(season: season, weeks: weeks));

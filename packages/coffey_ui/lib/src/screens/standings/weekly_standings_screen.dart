@@ -5,7 +5,11 @@ import '../../models/game_model.dart';
 import '../../models/pick_summary_model.dart';
 import '../../repositories/standings_repository.dart';
 import '../../repositories/week_repository.dart';
+import '../../widgets/empty_state_view.dart';
+import '../../widgets/error_state_view.dart';
 import '../../widgets/pick_correctness_icon.dart';
+import '../../widgets/responsive_content.dart';
+import '../../widgets/skeleton_loaders.dart';
 
 class WeeklyStandingsScreen extends StatelessWidget {
   const WeeklyStandingsScreen({super.key, required this.weekId});
@@ -34,74 +38,87 @@ class _WeeklyStandingsView extends StatelessWidget {
       appBar: AppBar(title: const Text('Weekly Standings')),
       body: BlocBuilder<WeeklyStandingsBloc, WeeklyStandingsState>(
         builder: (context, state) {
-          if (state is WeeklyStandingsInitial || state is WeeklyStandingsLoading) {
-            return const Center(child: CircularProgressIndicator());
+          if (state is WeeklyStandingsInitial ||
+              state is WeeklyStandingsLoading) {
+            return const SkeletonLeaderboardList();
           }
           if (state is WeeklyStandingsFailure) {
-            return Center(child: Text('Could not load standings: ${state.message}'));
+            return ErrorStateView(
+              message: 'Could not load standings: ${state.message}',
+              onRetry: () => context.read<WeeklyStandingsBloc>().add(
+                const WeeklyStandingsEvent.started(),
+              ),
+            );
           }
           if (state is WeeklyStandingsLoaded) {
             if (state.standings.isEmpty) {
-              return const Center(
-                child: Padding(
-                  padding: EdgeInsets.all(24),
-                  child: Text(
-                    "Results aren't final yet — check Live Results while games are in progress.",
-                    textAlign: TextAlign.center,
-                  ),
-                ),
+              return const EmptyStateView(
+                icon: Icons.leaderboard_outlined,
+                message:
+                    "Results aren't final yet — check Live Results while games "
+                    'are in progress.',
               );
             }
             final gamesById = {for (final g in state.week.games) g.id: g};
             final rankCounts = <int, int>{};
             for (final s in state.standings) {
-              if (s.rank != null) rankCounts[s.rank!] = (rankCounts[s.rank!] ?? 0) + 1;
+              if (s.rank != null)
+                rankCounts[s.rank!] = (rankCounts[s.rank!] ?? 0) + 1;
             }
 
-            return ListView.builder(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              itemCount: state.standings.length,
-              itemBuilder: (context, index) {
-                final standing = state.standings[index];
-                final isTied = standing.rank != null && (rankCounts[standing.rank!] ?? 0) > 1;
-                final isExpanded = state.expandedUserId == standing.userId;
-                final picks = _picksFor(state.picksSummary, standing.userId);
+            return ResponsiveContent(
+              child: ListView.builder(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                itemCount: state.standings.length,
+                itemBuilder: (context, index) {
+                  final standing = state.standings[index];
+                  final isTied =
+                      standing.rank != null &&
+                      (rankCounts[standing.rank!] ?? 0) > 1;
+                  final isExpanded = state.expandedUserId == standing.userId;
+                  final picks = _picksFor(state.picksSummary, standing.userId);
 
-                return Card(
-                  margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                  child: Column(
-                    children: [
-                      ListTile(
-                        leading: _RankBadge(rank: standing.rank),
-                        title: Text(standing.userName),
-                        subtitle: Text(
-                          '${standing.correctPicks} / ${standing.totalPicks} correct'
-                          '${isTied ? ' · tied' : ''}',
-                        ),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            if (standing.payoutAmount != null)
-                              Text(
-                                '\$${double.parse(standing.payoutAmount!).toStringAsFixed(2)}',
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .titleMedium
-                                    ?.copyWith(fontWeight: FontWeight.bold),
+                  return Card(
+                    margin: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 4,
+                    ),
+                    child: Column(
+                      children: [
+                        ListTile(
+                          leading: _RankBadge(rank: standing.rank),
+                          title: Text(standing.userName),
+                          subtitle: Text(
+                            '${standing.correctPicks} / ${standing.totalPicks} correct'
+                            '${isTied ? ' · tied' : ''}',
+                          ),
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              if (standing.payoutAmount != null)
+                                Text(
+                                  '\$${double.parse(standing.payoutAmount!).toStringAsFixed(2)}',
+                                  style: Theme.of(context).textTheme.titleMedium
+                                      ?.copyWith(fontWeight: FontWeight.bold),
+                                ),
+                              Icon(
+                                isExpanded
+                                    ? Icons.expand_less
+                                    : Icons.expand_more,
                               ),
-                            Icon(isExpanded ? Icons.expand_less : Icons.expand_more),
-                          ],
+                            ],
+                          ),
+                          onTap: () => context.read<WeeklyStandingsBloc>().add(
+                            WeeklyStandingsEvent.playerToggled(standing.userId),
+                          ),
                         ),
-                        onTap: () => context
-                            .read<WeeklyStandingsBloc>()
-                            .add(WeeklyStandingsEvent.playerToggled(standing.userId)),
-                      ),
-                      if (isExpanded)
-                        _PickBreakdown(picks: picks, gamesById: gamesById),
-                    ],
-                  ),
-                );
-              },
+                        if (isExpanded)
+                          _PickBreakdown(picks: picks, gamesById: gamesById),
+                      ],
+                    ),
+                  );
+                },
+              ),
             );
           }
           return const SizedBox.shrink();
@@ -110,7 +127,10 @@ class _WeeklyStandingsView extends StatelessWidget {
     );
   }
 
-  List<PickSummaryItemModel> _picksFor(List<PickSummaryEntryModel> entries, String userId) {
+  List<PickSummaryItemModel> _picksFor(
+    List<PickSummaryEntryModel> entries,
+    String userId,
+  ) {
     for (final entry in entries) {
       if (entry.userId == userId) return entry.picks;
     }
@@ -158,8 +178,8 @@ class _PickBreakdown extends StatelessWidget {
     final pickedAbbreviation = game == null
         ? '?'
         : (pick.pickedTeamId == game.homeTeam.id
-            ? game.homeTeam.abbreviation
-            : game.awayTeam.abbreviation);
+              ? game.homeTeam.abbreviation
+              : game.awayTeam.abbreviation);
     final matchup = game == null
         ? 'Unknown game'
         : '${game.awayTeam.abbreviation} @ ${game.homeTeam.abbreviation}';
@@ -171,7 +191,10 @@ class _PickBreakdown extends StatelessWidget {
           PickCorrectnessIcon(isCorrect: pick.isCorrect, size: 18),
           const SizedBox(width: 8),
           Expanded(child: Text(matchup)),
-          Text('Picked $pickedAbbreviation', style: Theme.of(context).textTheme.bodySmall),
+          Text(
+            'Picked $pickedAbbreviation',
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
         ],
       ),
     );

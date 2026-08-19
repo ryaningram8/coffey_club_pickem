@@ -11,6 +11,8 @@ class GameSelectionState with _$GameSelectionState {
     @Default(false) bool isPublishing,
   }) = GameSelectionLoaded;
 
-  const factory GameSelectionState.published(WeekModel week) = GameSelectionPublished;
-  const factory GameSelectionState.failure(String message) = GameSelectionFailure;
+  const factory GameSelectionState.published(WeekModel week) =
+      GameSelectionPublished;
+  const factory GameSelectionState.failure(String message) =
+      GameSelectionFailure;
 }

@@ -5,5 +5,6 @@ class GameSelectionEvent with _$GameSelectionEvent {
   const factory GameSelectionEvent.started() = GameSelectionStarted;
   const factory GameSelectionEvent.gameToggled(AvailableGameModel game) =
       GameSelectionGameToggled;
-  const factory GameSelectionEvent.publishRequested() = GameSelectionPublishRequested;
+  const factory GameSelectionEvent.publishRequested() =
+      GameSelectionPublishRequested;
 }

@@ -41,13 +41,13 @@ class _SignupScreenState extends State<SignupScreen> {
   void _onSubmit() {
     if (_formKey.currentState?.validate() ?? false) {
       context.read<AuthBloc>().add(
-            AuthSignupRequested(
-              name: _nameController.text.trim(),
-              email: _emailController.text.trim(),
-              password: _passwordController.text,
-              inviteCode: _inviteCodeController.text.trim(),
-            ),
-          );
+        AuthSignupRequested(
+          name: _nameController.text.trim(),
+          email: _emailController.text.trim(),
+          password: _passwordController.text,
+          inviteCode: _inviteCodeController.text.trim(),
+        ),
+      );
     }
   }
 
@@ -82,17 +82,18 @@ class _SignupScreenState extends State<SignupScreen> {
                         const SizedBox(height: 48),
                         Text(
                           'Create Account',
-                          style: Theme.of(context)
-                              .textTheme
-                              .headlineMedium
+                          style: Theme.of(context).textTheme.headlineMedium
                               ?.copyWith(fontWeight: FontWeight.bold),
                           textAlign: TextAlign.center,
                         ),
                         const SizedBox(height: 8),
                         Text(
                           'You need an invite code to join.',
-                          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          style: Theme.of(context).textTheme.bodyLarge
+                              ?.copyWith(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
                               ),
                           textAlign: TextAlign.center,
                         ),
@@ -109,8 +110,8 @@ class _SignupScreenState extends State<SignupScreen> {
                           ),
                           validator: (value) =>
                               (value == null || value.trim().isEmpty)
-                                  ? 'Name is required'
-                                  : null,
+                              ? 'Name is required'
+                              : null,
                         ),
                         const SizedBox(height: 16),
                         TextFormField(
@@ -126,7 +127,8 @@ class _SignupScreenState extends State<SignupScreen> {
                             if (value == null || value.trim().isEmpty) {
                               return 'Email is required';
                             }
-                            if (!value.contains('@')) return 'Enter a valid email';
+                            if (!value.contains('@'))
+                              return 'Enter a valid email';
                             return null;
                           },
                         ),
@@ -146,13 +148,16 @@ class _SignupScreenState extends State<SignupScreen> {
                                     ? Icons.visibility_outlined
                                     : Icons.visibility_off_outlined,
                               ),
-                              onPressed: () =>
-                                  setState(() => _obscurePassword = !_obscurePassword),
+                              onPressed: () => setState(
+                                () => _obscurePassword = !_obscurePassword,
+                              ),
                             ),
                           ),
                           validator: (value) {
-                            if (value == null || value.isEmpty) return 'Password is required';
-                            if (value.length < 8) return 'Password must be at least 8 characters';
+                            if (value == null || value.isEmpty)
+                              return 'Password is required';
+                            if (value.length < 8)
+                              return 'Password must be at least 8 characters';
                             return null;
                           },
                         ),
@@ -164,13 +169,15 @@ class _SignupScreenState extends State<SignupScreen> {
                           onFieldSubmitted: (_) => _onSubmit(),
                           decoration: const InputDecoration(
                             labelText: 'Invite Code',
-                            prefixIcon: Icon(Icons.confirmation_number_outlined),
+                            prefixIcon: Icon(
+                              Icons.confirmation_number_outlined,
+                            ),
                             border: OutlineInputBorder(),
                           ),
                           validator: (value) =>
                               (value == null || value.trim().isEmpty)
-                                  ? 'Invite code is required'
-                                  : null,
+                              ? 'Invite code is required'
+                              : null,
                         ),
                         const SizedBox(height: 24),
                         FilledButton(
@@ -179,7 +186,9 @@ class _SignupScreenState extends State<SignupScreen> {
                               ? const SizedBox(
                                   height: 20,
                                   width: 20,
-                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
                                 )
                               : const Text('Create Account'),
                         ),

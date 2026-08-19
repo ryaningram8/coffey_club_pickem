@@ -27,11 +27,11 @@ class _LoginScreenState extends State<LoginScreen> {
   void _onSubmit() {
     if (_formKey.currentState?.validate() ?? false) {
       context.read<AuthBloc>().add(
-            AuthLoginRequested(
-              email: _emailController.text.trim(),
-              password: _passwordController.text,
-            ),
-          );
+        AuthLoginRequested(
+          email: _emailController.text.trim(),
+          password: _passwordController.text,
+        ),
+      );
     }
   }
 
@@ -70,17 +70,18 @@ class _LoginScreenState extends State<LoginScreen> {
                         const SizedBox(height: 48),
                         Text(
                           'Coffey Club\nPickem',
-                          style: Theme.of(context)
-                              .textTheme
-                              .displaySmall
+                          style: Theme.of(context).textTheme.displaySmall
                               ?.copyWith(fontWeight: FontWeight.bold),
                           textAlign: TextAlign.center,
                         ),
                         const SizedBox(height: 8),
                         Text(
                           'Sign in to your account',
-                          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          style: Theme.of(context).textTheme.bodyLarge
+                              ?.copyWith(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
                               ),
                           textAlign: TextAlign.center,
                         ),
@@ -98,7 +99,8 @@ class _LoginScreenState extends State<LoginScreen> {
                             if (value == null || value.trim().isEmpty) {
                               return 'Email is required';
                             }
-                            if (!value.contains('@')) return 'Enter a valid email';
+                            if (!value.contains('@'))
+                              return 'Enter a valid email';
                             return null;
                           },
                         ),
@@ -118,8 +120,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                     ? Icons.visibility_outlined
                                     : Icons.visibility_off_outlined,
                               ),
-                              onPressed: () =>
-                                  setState(() => _obscurePassword = !_obscurePassword),
+                              onPressed: () => setState(
+                                () => _obscurePassword = !_obscurePassword,
+                              ),
                             ),
                           ),
                           validator: (value) => (value == null || value.isEmpty)
@@ -133,7 +136,9 @@ class _LoginScreenState extends State<LoginScreen> {
                               ? const SizedBox(
                                   height: 20,
                                   width: 20,
-                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
                                 )
                               : const Text('Sign In'),
                         ),

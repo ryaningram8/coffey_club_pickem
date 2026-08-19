@@ -10,5 +10,6 @@ class NotificationPrefsState with _$NotificationPrefsState {
     String? errorMessage,
   }) = NotificationPrefsLoaded;
 
-  const factory NotificationPrefsState.failure(String message) = NotificationPrefsFailure;
+  const factory NotificationPrefsState.failure(String message) =
+      NotificationPrefsFailure;
 }

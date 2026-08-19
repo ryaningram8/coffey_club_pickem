@@ -4,7 +4,11 @@ import 'package:flutter/material.dart';
 /// not final yet). Shared by the live results overlay and the standings
 /// pick breakdown.
 class PickCorrectnessIcon extends StatelessWidget {
-  const PickCorrectnessIcon({super.key, required this.isCorrect, this.size = 20});
+  const PickCorrectnessIcon({
+    super.key,
+    required this.isCorrect,
+    this.size = 20,
+  });
 
   final bool? isCorrect;
   final double size;
@@ -15,7 +19,11 @@ class PickCorrectnessIcon extends StatelessWidget {
       return Icon(Icons.check_circle, color: Colors.green.shade600, size: size);
     }
     if (isCorrect == false) {
-      return Icon(Icons.cancel, color: Theme.of(context).colorScheme.error, size: size);
+      return Icon(
+        Icons.cancel,
+        color: Theme.of(context).colorScheme.error,
+        size: size,
+      );
     }
     return Icon(
       Icons.remove_circle_outline,

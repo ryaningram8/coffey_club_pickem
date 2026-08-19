@@ -7,6 +7,7 @@ class PicksState with _$PicksState {
 
   const factory PicksState.loaded({
     required WeekModel week,
+
     /// gameId -> pickedTeamId
     required Map<String, String> selections,
     @Default(false) bool isSubmitting,

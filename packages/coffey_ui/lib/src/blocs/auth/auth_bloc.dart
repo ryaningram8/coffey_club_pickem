@@ -9,8 +9,8 @@ part 'auth_state.dart';
 
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
   AuthBloc({required AuthRepository authRepository})
-      : _authRepository = authRepository,
-        super(const AuthState.initial()) {
+    : _authRepository = authRepository,
+      super(const AuthState.initial()) {
     on<AuthStarted>(_onStarted);
     on<AuthLoginRequested>(_onLoginRequested);
     on<AuthSignupRequested>(_onSignupRequested);
@@ -24,7 +24,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     emit(const AuthState.loading());
     try {
       final user = await _authRepository.getStoredUser();
-      emit(user != null ? AuthState.authenticated(user) : const AuthState.unauthenticated());
+      emit(
+        user != null
+            ? AuthState.authenticated(user)
+            : const AuthState.unauthenticated(),
+      );
     } catch (_) {
       emit(const AuthState.unauthenticated());
     }

@@ -66,7 +66,9 @@ class _StatusChip extends StatelessWidget {
     return Chip(
       label: Text(status.replaceAll('_', ' ')),
       backgroundColor: isLive ? theme.colorScheme.primaryContainer : null,
-      labelStyle: isLive ? TextStyle(color: theme.colorScheme.onPrimaryContainer) : null,
+      labelStyle: isLive
+          ? TextStyle(color: theme.colorScheme.onPrimaryContainer)
+          : null,
       visualDensity: VisualDensity.compact,
     );
   }
@@ -97,7 +99,10 @@ class _TeamScoreRow extends StatelessWidget {
           const SizedBox(width: 16),
         const SizedBox(width: 6),
         Expanded(
-          child: Text(label, style: TextStyle(fontWeight: weight, fontSize: 16)),
+          child: Text(
+            label,
+            style: TextStyle(fontWeight: weight, fontSize: 16),
+          ),
         ),
         Text(
           score?.toString() ?? '-',

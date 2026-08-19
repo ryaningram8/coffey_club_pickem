@@ -3,6 +3,10 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../blocs/selected_pool/selected_pool_cubit.dart';
 import '../../models/season_standing_model.dart';
 import '../../repositories/standings_repository.dart';
+import '../../widgets/empty_state_view.dart';
+import '../../widgets/error_state_view.dart';
+import '../../widgets/responsive_content.dart';
+import '../../widgets/skeleton_loaders.dart';
 
 /// All-time leaderboard for the currently selected pool (see
 /// SelectedPoolCubit). Simple fetch-and-display, so this uses FutureBuilder
@@ -38,41 +42,62 @@ class _SeasonStandingsScreenState extends State<SeasonStandingsScreen> {
         future: _standingsFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState != ConnectionState.done) {
-            return const Center(child: CircularProgressIndicator());
+            return const SkeletonLeaderboardList();
           }
           if (snapshot.hasError) {
-            return const Center(child: Text('Could not load season standings.'));
+            return ErrorStateView(
+              message: 'Could not load season standings.',
+              onRetry: () => setState(() => _standingsFuture = _load()),
+            );
           }
           final standings = snapshot.data;
           if (standings == null) {
-            return const Center(child: Text('No active season yet.'));
+            return const EmptyStateView(
+              icon: Icons.emoji_events_outlined,
+              message: 'No active season yet.',
+            );
           }
           if (standings.isEmpty) {
-            return const Center(child: Text('No results yet this season.'));
+            return const EmptyStateView(
+              icon: Icons.emoji_events_outlined,
+              message: 'No results yet this season.',
+            );
           }
 
-          return ListView.builder(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            itemCount: standings.length,
-            itemBuilder: (context, index) {
-              final s = standings[index];
-              final rank = index == 0 || s.totalCorrect != standings[index - 1].totalCorrect
-                  ? index + 1
-                  : null;
-              return ListTile(
-                leading: CircleAvatar(
-                  backgroundColor: Theme.of(context).colorScheme.secondaryContainer,
-                  foregroundColor: Theme.of(context).colorScheme.onSecondaryContainer,
-                  child: Text(rank?.toString() ?? '='),
-                ),
-                title: Text(s.userName),
-                subtitle: Text('${s.totalCorrect} correct across ${s.weeksPlayed} weeks'),
-                trailing: Text(
-                  '\$${double.parse(s.totalPayout).toStringAsFixed(2)}',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-                ),
-              );
-            },
+          return ResponsiveContent(
+            child: ListView.builder(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              itemCount: standings.length,
+              itemBuilder: (context, index) {
+                final s = standings[index];
+                final rank =
+                    index == 0 ||
+                        s.totalCorrect != standings[index - 1].totalCorrect
+                    ? index + 1
+                    : null;
+                return ListTile(
+                  leading: CircleAvatar(
+                    backgroundColor: Theme.of(
+                      context,
+                    ).colorScheme.secondaryContainer,
+                    foregroundColor: Theme.of(
+                      context,
+                    ).colorScheme.onSecondaryContainer,
+                    child: Text(rank?.toString() ?? '='),
+                  ),
+                  title: Text(s.userName),
+                  subtitle: Text(
+                    '${s.totalCorrect} correct across ${s.weeksPlayed} weeks',
+                  ),
+                  trailing: Text(
+                    '\$${double.parse(s.totalPayout).toStringAsFixed(2)}',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                );
+              },
+            ),
           );
         },
       ),

@@ -14,10 +14,10 @@ class GameSelectionBloc extends Bloc<GameSelectionEvent, GameSelectionState> {
     required GameRepository gameRepository,
     required WeekRepository weekRepository,
     required String weekId,
-  })  : _gameRepository = gameRepository,
-        _weekRepository = weekRepository,
-        _weekId = weekId,
-        super(const GameSelectionState.initial()) {
+  }) : _gameRepository = gameRepository,
+       _weekRepository = weekRepository,
+       _weekId = weekId,
+       super(const GameSelectionState.initial()) {
     on<GameSelectionStarted>(_onStarted);
     on<GameSelectionGameToggled>(_onGameToggled);
     on<GameSelectionPublishRequested>(_onPublishRequested);
@@ -46,9 +46,13 @@ class GameSelectionBloc extends Bloc<GameSelectionEvent, GameSelectionState> {
   ) {
     final current = state;
     if (current is! GameSelectionLoaded) return;
-    final isSelected = current.selected.any((g) => g.espnGameId == event.game.espnGameId);
+    final isSelected = current.selected.any(
+      (g) => g.espnGameId == event.game.espnGameId,
+    );
     final updated = isSelected
-        ? current.selected.where((g) => g.espnGameId != event.game.espnGameId).toList()
+        ? current.selected
+              .where((g) => g.espnGameId != event.game.espnGameId)
+              .toList()
         : [...current.selected, event.game];
     emit(current.copyWith(selected: updated));
   }

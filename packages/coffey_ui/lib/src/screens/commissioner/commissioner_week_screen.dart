@@ -3,6 +3,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../models/week_model.dart';
 import '../../repositories/week_repository.dart';
+import '../../widgets/error_state_view.dart';
+import '../../widgets/responsive_content.dart';
 
 /// Read-only detail view of a single week's published games — a simple
 /// fetch-and-display screen, so it uses a plain FutureBuilder rather than a
@@ -22,8 +24,11 @@ class _CommissionerWeekScreenState extends State<CommissionerWeekScreen> {
   @override
   void initState() {
     super.initState();
-    _weekFuture = context.read<WeekRepository>().getWeek(widget.weekId);
+    _weekFuture = _load();
   }
+
+  Future<WeekModel> _load() =>
+      context.read<WeekRepository>().getWeek(widget.weekId);
 
   @override
   Widget build(BuildContext context) {
@@ -56,68 +61,97 @@ class _CommissionerWeekScreenState extends State<CommissionerWeekScreen> {
             return const Center(child: CircularProgressIndicator());
           }
           if (snapshot.hasError || !snapshot.hasData) {
-            return const Center(child: Text('Could not load this week.'));
+            return ErrorStateView(
+              message: 'Could not load this week.',
+              onRetry: () => setState(() => _weekFuture = _load()),
+            );
           }
           final week = snapshot.data!;
-          return ListView(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
-            children: [
-              Text(week.label, style: Theme.of(context).textTheme.headlineSmall),
-              const SizedBox(height: 4),
-              Text('Status: ${week.status.replaceAll('_', ' ')} · '
-                  'Deadline: ${_formatDate(week.pickDeadline)}'),
-              const SizedBox(height: 16),
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('Weekly Message', style: Theme.of(context).textTheme.titleSmall),
-                            const SizedBox(height: 4),
-                            Text(
-                              week.commissionerMessage?.isNotEmpty == true
-                                  ? week.commissionerMessage!
-                                  : 'No message set yet.',
-                              style: week.commissionerMessage?.isNotEmpty == true
-                                  ? const TextStyle(fontStyle: FontStyle.italic)
-                                  : TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
-                            ),
-                          ],
-                        ),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.edit_outlined),
-                        tooltip: 'Edit message',
-                        onPressed: () => _editMessage(context, week),
-                      ),
-                    ],
-                  ),
+          return ResponsiveContent(
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
+              children: [
+                Text(
+                  week.label,
+                  style: Theme.of(context).textTheme.headlineSmall,
                 ),
-              ),
-              const SizedBox(height: 16),
-              if (week.games.isEmpty)
-                const Text('No games assigned yet.')
-              else
-                ...week.games.map(
-                  (game) => Card(
-                    child: ListTile(
-                      title: Text('${game.awayTeam.abbreviation} @ ${game.homeTeam.abbreviation}'),
-                      subtitle: Text(game.sport == 'college' ? 'College' : 'NFL'),
-                      trailing: (game.spread != null || game.overUnder != null)
-                          ? Text([
-                              if (game.spread != null) 'Spread ${game.spread}',
-                              if (game.overUnder != null) 'O/U ${game.overUnder}',
-                            ].join(' · '))
-                          : null,
+                const SizedBox(height: 4),
+                Text(
+                  'Status: ${week.status.replaceAll('_', ' ')} · '
+                  'Deadline: ${_formatDate(week.pickDeadline)}',
+                ),
+                const SizedBox(height: 16),
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Weekly Message',
+                                style: Theme.of(context).textTheme.titleSmall,
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                week.commissionerMessage?.isNotEmpty == true
+                                    ? week.commissionerMessage!
+                                    : 'No message set yet.',
+                                style:
+                                    week.commissionerMessage?.isNotEmpty == true
+                                    ? const TextStyle(
+                                        fontStyle: FontStyle.italic,
+                                      )
+                                    : TextStyle(
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.onSurfaceVariant,
+                                      ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.edit_outlined),
+                          tooltip: 'Edit message',
+                          onPressed: () => _editMessage(context, week),
+                        ),
+                      ],
                     ),
                   ),
                 ),
-            ],
+                const SizedBox(height: 16),
+                if (week.games.isEmpty)
+                  const Text('No games assigned yet.')
+                else
+                  ...week.games.map(
+                    (game) => Card(
+                      child: ListTile(
+                        title: Text(
+                          '${game.awayTeam.abbreviation} @ ${game.homeTeam.abbreviation}',
+                        ),
+                        subtitle: Text(
+                          game.sport == 'college' ? 'College' : 'NFL',
+                        ),
+                        trailing:
+                            (game.spread != null || game.overUnder != null)
+                            ? Text(
+                                [
+                                  if (game.spread != null)
+                                    'Spread ${game.spread}',
+                                  if (game.overUnder != null)
+                                    'O/U ${game.overUnder}',
+                                ].join(' · '),
+                              )
+                            : null,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
           );
         },
       ),
@@ -125,7 +159,9 @@ class _CommissionerWeekScreenState extends State<CommissionerWeekScreen> {
   }
 
   Future<void> _editMessage(BuildContext context, WeekModel week) async {
-    final controller = TextEditingController(text: week.commissionerMessage ?? '');
+    final controller = TextEditingController(
+      text: week.commissionerMessage ?? '',
+    );
     final weekRepository = context.read<WeekRepository>();
     final messenger = ScaffoldMessenger.of(context);
 
@@ -138,7 +174,9 @@ class _CommissionerWeekScreenState extends State<CommissionerWeekScreen> {
           autofocus: true,
           maxLength: 500,
           maxLines: 4,
-          decoration: const InputDecoration(hintText: "Who's getting roasted this week?"),
+          decoration: const InputDecoration(
+            hintText: "Who's getting roasted this week?",
+          ),
         ),
         actions: [
           TextButton(
@@ -162,7 +200,9 @@ class _CommissionerWeekScreenState extends State<CommissionerWeekScreen> {
       if (!mounted) return;
       setState(() => _weekFuture = weekRepository.getWeek(widget.weekId));
     } catch (e) {
-      messenger.showSnackBar(SnackBar(content: Text('Could not save message: $e')));
+      messenger.showSnackBar(
+        SnackBar(content: Text('Could not save message: $e')),
+      );
     }
   }
 

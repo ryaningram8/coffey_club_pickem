@@ -190,13 +190,24 @@ The original global-role design below (`PUT /admin/users/:id/role`) was supersed
 - [x] Admin user management screen — `UserManagementScreen`, pool filter + per-row role toggle/remove; interactively verified in-browser locally 2026-08-17
 
 ### Polish
-- [ ] Empty states for all screens (no picks yet, off-season, etc.)
-- [ ] Error handling and retry states in all BLoCs
-- [ ] Loading skeletons for game cards and leaderboard rows
-- [ ] Responsive layout breakpoints (mobile vs. wide web)
-- [ ] Material 3 color scheme finalized
-- [ ] App icon + splash screen (mobile)
-- [ ] Web favicon + PWA manifest
+**2026-08-18:** `flutter analyze` is clean across `coffey_ui`/`mobile`/`web` and the
+web app was booted against the real local backend (module bundle loads with
+no fatal errors). Deeper interactive/visual verification (actually seeing
+the skeletons shimmer, empty states render, retry buttons work) hit the
+same browser-tool screenshot/semantics limitation noted earlier in this
+phase — confirmed environment-wide again this session (`computer{screenshot}`
+times out with "Browser pane is not displayed" on this page too), not
+something introduced by this work. Everything below is marked `[~]` rather
+than `[x]` for that reason, and because none of it has been run through the
+containerized dev-VM stack yet — a manual check is still owed once the
+browser tool (or a real device) is available.
+- [~] Empty states for all screens (no picks yet, off-season, etc.) — new `EmptyStateView` widget; added to the pick sheet, live results, game browser (distinguishes "no games at all" from "no search results"), and season standings screens, which previously had no empty branch at all
+- [~] Error handling and retry states in all BLoCs — new `ErrorStateView` widget wired into every BLoC/Cubit-backed screen's failure branch (previously every failure state rendered a dead-end message with no way to reload); `NotificationPrefsCubit` gained a public `reload()`; the home hero card's silently-blank failure case and the pool switcher's error case both now show a retry action too
+- [~] Loading skeletons for game cards and leaderboard rows — new `ShimmerBox`/`SkeletonGameCard`/`SkeletonLeaderboardRow` widgets (hand-rolled animated gradient, no external shimmer package needed); used by the pick sheet, live results, weekly standings, and season standings screens in place of a bare spinner
+- [~] Responsive layout breakpoints (mobile vs. wide web) — new `ResponsiveContent` widget caps list-style screen bodies to a centered max width above a 720px viewport breakpoint; applied to every screen that was previously a full-bleed single-column list (pick sheet, live results, both standings screens, payouts, user management, invite management, game browser, commissioner home/week, notification prefs, settings). Home/login/signup already had their own narrower width cap and were left as-is
+- [x] Material 3 color scheme finalized — reviewed `app_theme.dart` and all screens/widgets: light/dark Cardinal+Gold schemes were already fully hand-tuned with explicit rationale comments, `ThemeCubit` persists the mode, and no hardcoded colors exist outside the theme file except one intentional semantic green (pick-correctness checkmark)
+- [~] App icon + splash screen (mobile) — Android `ic_launcher` was still the wrong/stale crest artwork, not the real coffee-mug brand logo; regenerated all 5 legacy mipmap sizes plus a proper adaptive icon (`mipmap-anydpi-v26`, white background + mug foreground) from `coffey_club_logo.png`, and replaced the blank white splash (`launch_background.xml`) with the same logo centered on a white/dark-mode-aware background. No `ios/` project exists yet in `apps/mobile`, so this is Android-only for now
+- [~] Web favicon + PWA manifest — favicon/icons were already correct (coffee-mug logo); fixed `manifest.json`'s `theme_color`/`background_color`, which were a leftover dark green (`#1B5E20`) that didn't match the actual Cardinal brand color, added a matching `<meta name="theme-color">` to `index.html`, and added maskable icon variants (`Icon-192/512-maskable.png`) for proper Android home-screen install masking
 
 ---
 

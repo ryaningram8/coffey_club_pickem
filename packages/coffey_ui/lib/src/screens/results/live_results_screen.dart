@@ -5,7 +5,11 @@ import '../../blocs/live_results/live_results_bloc.dart';
 import '../../models/pick_summary_model.dart';
 import '../../repositories/standings_repository.dart';
 import '../../repositories/week_repository.dart';
+import '../../widgets/empty_state_view.dart';
+import '../../widgets/error_state_view.dart';
 import '../../widgets/live_game_card.dart';
+import '../../widgets/responsive_content.dart';
+import '../../widgets/skeleton_loaders.dart';
 
 class LiveResultsScreen extends StatelessWidget {
   const LiveResultsScreen({super.key, required this.weekId});
@@ -15,7 +19,9 @@ class LiveResultsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final authState = context.read<AuthBloc>().state;
-    final currentUserId = authState is AuthAuthenticated ? authState.user.id : '';
+    final currentUserId = authState is AuthAuthenticated
+        ? authState.user.id
+        : '';
 
     return BlocProvider(
       create: (context) => LiveResultsBloc(
@@ -40,49 +46,67 @@ class _LiveResultsView extends StatelessWidget {
       body: BlocBuilder<LiveResultsBloc, LiveResultsState>(
         builder: (context, state) {
           if (state is LiveResultsInitial || state is LiveResultsLoading) {
-            return const Center(child: CircularProgressIndicator());
+            return const SkeletonGameCardList();
           }
           if (state is LiveResultsFailure) {
-            return Center(child: Text('Could not load live results: ${state.message}'));
+            return ErrorStateView(
+              message: 'Could not load live results: ${state.message}',
+              onRetry: () => context.read<LiveResultsBloc>().add(
+                const LiveResultsEvent.started(),
+              ),
+            );
           }
           if (state is LiveResultsLoaded) {
             final games = state.week.games;
             final myEntry = _findEntry(state.picksSummary, currentUserId);
-            final myPicks = {for (final p in myEntry?.picks ?? <PickSummaryItemModel>[]) p.gameId: p};
-            final myCorrectCount = myPicks.values.where((p) => p.isCorrect == true).length;
+            final myPicks = {
+              for (final p in myEntry?.picks ?? <PickSummaryItemModel>[])
+                p.gameId: p,
+            };
+            final myCorrectCount = myPicks.values
+                .where((p) => p.isCorrect == true)
+                .length;
             final leaderboard = _buildLeaderboard(state.picksSummary);
 
+            if (games.isEmpty) {
+              return const EmptyStateView(
+                icon: Icons.live_tv_outlined,
+                message: 'No games assigned for this week yet.',
+              );
+            }
+
             return RefreshIndicator(
-              onRefresh: () async =>
-                  context.read<LiveResultsBloc>().add(const LiveResultsEvent.refreshed()),
-              child: CustomScrollView(
-                slivers: [
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'You: $myCorrectCount / ${games.length} correct',
-                            style: Theme.of(context).textTheme.titleLarge,
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Updated ${_formatTime(state.lastUpdated)}',
-                            style: Theme.of(context).textTheme.bodySmall,
-                          ),
-                          if (leaderboard.isNotEmpty) ...[
-                            const SizedBox(height: 16),
-                            _MiniLeaderboard(entries: leaderboard),
+              onRefresh: () async => context.read<LiveResultsBloc>().add(
+                const LiveResultsEvent.refreshed(),
+              ),
+              child: ResponsiveContent(
+                child: CustomScrollView(
+                  slivers: [
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'You: $myCorrectCount / ${games.length} correct',
+                              style: Theme.of(context).textTheme.titleLarge,
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Updated ${_formatTime(state.lastUpdated)}',
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
+                            if (leaderboard.isNotEmpty) ...[
+                              const SizedBox(height: 16),
+                              _MiniLeaderboard(entries: leaderboard),
+                            ],
                           ],
-                        ],
+                        ),
                       ),
                     ),
-                  ),
-                  SliverList(
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) {
+                    SliverList(
+                      delegate: SliverChildBuilderDelegate((context, index) {
                         final game = games[index];
                         final myPick = myPicks[game.id];
                         return LiveGameCard(
@@ -90,12 +114,11 @@ class _LiveResultsView extends StatelessWidget {
                           myPickedTeamId: myPick?.pickedTeamId,
                           myPickIsCorrect: myPick?.isCorrect,
                         );
-                      },
-                      childCount: games.length,
+                      }, childCount: games.length),
                     ),
-                  ),
-                  const SliverToBoxAdapter(child: SizedBox(height: 16)),
-                ],
+                    const SliverToBoxAdapter(child: SizedBox(height: 16)),
+                  ],
+                ),
               ),
             );
           }
@@ -105,24 +128,30 @@ class _LiveResultsView extends StatelessWidget {
     );
   }
 
-  PickSummaryEntryModel? _findEntry(List<PickSummaryEntryModel> entries, String userId) {
+  PickSummaryEntryModel? _findEntry(
+    List<PickSummaryEntryModel> entries,
+    String userId,
+  ) {
     for (final entry in entries) {
       if (entry.userId == userId) return entry;
     }
     return null;
   }
 
-  List<_LeaderboardEntry> _buildLeaderboard(List<PickSummaryEntryModel> entries) {
-    final rows = entries
-        .map(
-          (e) => _LeaderboardEntry(
-            userName: e.userName,
-            correct: e.picks.where((p) => p.isCorrect == true).length,
-            total: e.picks.length,
-          ),
-        )
-        .toList()
-      ..sort((a, b) => b.correct.compareTo(a.correct));
+  List<_LeaderboardEntry> _buildLeaderboard(
+    List<PickSummaryEntryModel> entries,
+  ) {
+    final rows =
+        entries
+            .map(
+              (e) => _LeaderboardEntry(
+                userName: e.userName,
+                correct: e.picks.where((p) => p.isCorrect == true).length,
+                total: e.picks.length,
+              ),
+            )
+            .toList()
+          ..sort((a, b) => b.correct.compareTo(a.correct));
     return rows.take(5).toList();
   }
 
@@ -133,7 +162,11 @@ class _LiveResultsView extends StatelessWidget {
 }
 
 class _LeaderboardEntry {
-  _LeaderboardEntry({required this.userName, required this.correct, required this.total});
+  _LeaderboardEntry({
+    required this.userName,
+    required this.correct,
+    required this.total,
+  });
   final String userName;
   final int correct;
   final int total;

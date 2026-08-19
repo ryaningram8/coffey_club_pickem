@@ -3,7 +3,11 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../blocs/picks/picks_bloc.dart';
 import '../../repositories/pick_repository.dart';
 import '../../repositories/week_repository.dart';
+import '../../widgets/empty_state_view.dart';
+import '../../widgets/error_state_view.dart';
 import '../../widgets/pick_game_card.dart';
+import '../../widgets/responsive_content.dart';
+import '../../widgets/skeleton_loaders.dart';
 
 class PickSheetScreen extends StatelessWidget {
   const PickSheetScreen({super.key, required this.weekId});
@@ -34,31 +38,49 @@ class _PickSheetView extends StatelessWidget {
         listener: (context, state) {
           if (state is PicksLoaded) {
             if (state.justSubmitted) {
-              ScaffoldMessenger.of(context)
-                  .showSnackBar(const SnackBar(content: Text('Picks submitted!')));
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(const SnackBar(content: Text('Picks submitted!')));
             }
             if (state.errorMessage != null) {
-              ScaffoldMessenger.of(context)
-                  .showSnackBar(SnackBar(content: Text(state.errorMessage!)));
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(SnackBar(content: Text(state.errorMessage!)));
             }
           }
           if (state is PicksFailure) {
-            ScaffoldMessenger.of(context)
-                .showSnackBar(SnackBar(content: Text(state.message)));
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text(state.message)));
           }
         },
         builder: (context, state) {
           if (state is PicksInitial || state is PicksLoading) {
-            return const Center(child: CircularProgressIndicator());
+            return const SkeletonGameCardList();
           }
           if (state is PicksFailure) {
-            return const Center(child: Text('Could not load this week.'));
+            return ErrorStateView(
+              message: 'Could not load this week.',
+              onRetry: () =>
+                  context.read<PicksBloc>().add(const PicksEvent.started()),
+            );
           }
           if (state is PicksLoaded) {
             final games = state.week.games;
             final pickedCount = state.selections.length;
             final isComplete = games.isNotEmpty && pickedCount == games.length;
-            final deadlinePassed = state.week.pickDeadline.isBefore(DateTime.now());
+            final deadlinePassed = state.week.pickDeadline.isBefore(
+              DateTime.now(),
+            );
+
+            if (games.isEmpty) {
+              return const EmptyStateView(
+                icon: Icons.sports_football_outlined,
+                message:
+                    'No games assigned for this week yet. Check back once the '
+                    'commissioner publishes the slate.',
+              );
+            }
 
             return Column(
               children: [
@@ -77,11 +99,14 @@ class _PickSheetView extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 Expanded(
-                  child: CustomScrollView(
-                    slivers: [
-                      SliverList(
-                        delegate: SliverChildBuilderDelegate(
-                          (context, index) {
+                  child: ResponsiveContent(
+                    child: CustomScrollView(
+                      slivers: [
+                        SliverList(
+                          delegate: SliverChildBuilderDelegate((
+                            context,
+                            index,
+                          ) {
                             final game = games[index];
                             return PickGameCard(
                               game: game,
@@ -89,34 +114,40 @@ class _PickSheetView extends StatelessWidget {
                               onTeamSelected: deadlinePassed
                                   ? (_) {}
                                   : (teamId) => context.read<PicksBloc>().add(
-                                        PicksEvent.teamSelected(
-                                          gameId: game.id,
-                                          teamId: teamId,
-                                        ),
+                                      PicksEvent.teamSelected(
+                                        gameId: game.id,
+                                        teamId: teamId,
                                       ),
+                                    ),
                             );
-                          },
-                          childCount: games.length,
+                          }, childCount: games.length),
                         ),
-                      ),
-                      const SliverToBoxAdapter(child: SizedBox(height: 16)),
-                    ],
+                        const SliverToBoxAdapter(child: SizedBox(height: 16)),
+                      ],
+                    ),
                   ),
                 ),
                 SafeArea(
                   child: Padding(
                     padding: const EdgeInsets.all(12),
                     child: FilledButton(
-                      onPressed: (!isComplete || state.isSubmitting || deadlinePassed)
+                      onPressed:
+                          (!isComplete || state.isSubmitting || deadlinePassed)
                           ? null
-                          : () => context.read<PicksBloc>().add(const PicksEvent.submitRequested()),
+                          : () => context.read<PicksBloc>().add(
+                              const PicksEvent.submitRequested(),
+                            ),
                       child: state.isSubmitting
                           ? const SizedBox(
                               height: 20,
                               width: 20,
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
-                          : Text(deadlinePassed ? 'Deadline Passed' : 'Submit Picks'),
+                          : Text(
+                              deadlinePassed
+                                  ? 'Deadline Passed'
+                                  : 'Submit Picks',
+                            ),
                     ),
                   ),
                 ),

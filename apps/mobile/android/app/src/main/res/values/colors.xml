@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Coffey Club Pickem brand white — backdrop for the adaptive launcher
+         icon and splash screen so the Cardinal/Gold/brown logo pops. -->
+    <color name="launch_background">#FFFFFF</color>
+    <color name="ic_launcher_background">#FFFFFF</color>
+</resources>

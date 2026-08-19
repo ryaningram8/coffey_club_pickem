@@ -4,6 +4,9 @@ import '../../blocs/game_selection/game_selection_bloc.dart';
 import '../../repositories/game_repository.dart';
 import '../../repositories/week_repository.dart';
 import '../../widgets/available_game_tile.dart';
+import '../../widgets/empty_state_view.dart';
+import '../../widgets/error_state_view.dart';
+import '../../widgets/responsive_content.dart';
 
 /// Commissioner game browser + selection + publish flow, all in one screen:
 /// search available games, toggle a selection with a running college/NFL
@@ -50,13 +53,15 @@ class _GameBrowserViewState extends State<_GameBrowserView> {
       body: BlocConsumer<GameSelectionBloc, GameSelectionState>(
         listener: (context, state) {
           if (state is GameSelectionPublished) {
-            ScaffoldMessenger.of(context)
-                .showSnackBar(const SnackBar(content: Text('Week published')));
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(const SnackBar(content: Text('Week published')));
             Navigator.of(context).pop();
           }
           if (state is GameSelectionFailure) {
-            ScaffoldMessenger.of(context)
-                .showSnackBar(SnackBar(content: Text(state.message)));
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text(state.message)));
           }
         },
         builder: (context, state) {
@@ -64,7 +69,12 @@ class _GameBrowserViewState extends State<_GameBrowserView> {
             return const Center(child: CircularProgressIndicator());
           }
           if (state is GameSelectionFailure) {
-            return const Center(child: Text('Could not load available games.'));
+            return ErrorStateView(
+              message: 'Could not load available games.',
+              onRetry: () => context.read<GameSelectionBloc>().add(
+                const GameSelectionEvent.started(),
+              ),
+            );
           }
           if (state is GameSelectionLoaded) {
             final filtered = state.available.where((g) {
@@ -74,8 +84,12 @@ class _GameBrowserViewState extends State<_GameBrowserView> {
                   g.awayTeam.name.toLowerCase().contains(q);
             }).toList();
 
-            final collegeCount = state.selected.where((g) => g.sport == 'college').length;
-            final nflCount = state.selected.where((g) => g.sport == 'nfl').length;
+            final collegeCount = state.selected
+                .where((g) => g.sport == 'college')
+                .length;
+            final nflCount = state.selected
+                .where((g) => g.sport == 'nfl')
+                .length;
 
             return Column(
               children: [
@@ -104,27 +118,36 @@ class _GameBrowserViewState extends State<_GameBrowserView> {
                 const SizedBox(height: 8),
                 Expanded(
                   child: filtered.isEmpty
-                      ? const Center(child: Text('No games match your search.'))
-                      : CustomScrollView(
-                          slivers: [
-                            SliverList(
-                              delegate: SliverChildBuilderDelegate(
-                                (context, index) {
+                      ? EmptyStateView(
+                          icon: Icons.sports_football_outlined,
+                          message: state.available.isEmpty
+                              ? 'No games available from ESPN yet for this window.'
+                              : 'No games match your search.',
+                        )
+                      : ResponsiveContent(
+                          child: CustomScrollView(
+                            slivers: [
+                              SliverList(
+                                delegate: SliverChildBuilderDelegate((
+                                  context,
+                                  index,
+                                ) {
                                   final game = filtered[index];
-                                  final isSelected = state.selected
-                                      .any((g) => g.espnGameId == game.espnGameId);
+                                  final isSelected = state.selected.any(
+                                    (g) => g.espnGameId == game.espnGameId,
+                                  );
                                   return AvailableGameTile(
                                     game: game,
                                     selected: isSelected,
-                                    onChanged: (_) => context
-                                        .read<GameSelectionBloc>()
-                                        .add(GameSelectionEvent.gameToggled(game)),
+                                    onChanged: (_) =>
+                                        context.read<GameSelectionBloc>().add(
+                                          GameSelectionEvent.gameToggled(game),
+                                        ),
                                   );
-                                },
-                                childCount: filtered.length,
+                                }, childCount: filtered.length),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                 ),
                 SafeArea(
@@ -133,7 +156,8 @@ class _GameBrowserViewState extends State<_GameBrowserView> {
                     child: FilledButton(
                       onPressed: state.selected.isEmpty || state.isPublishing
                           ? null
-                          : () => _confirmPublish(context, state.selected.length),
+                          : () =>
+                                _confirmPublish(context, state.selected.length),
                       child: state.isPublishing
                           ? const SizedBox(
                               height: 20,

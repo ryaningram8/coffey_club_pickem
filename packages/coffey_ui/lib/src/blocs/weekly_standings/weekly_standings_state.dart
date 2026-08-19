@@ -12,5 +12,6 @@ class WeeklyStandingsState with _$WeeklyStandingsState {
     String? expandedUserId,
   }) = WeeklyStandingsLoaded;
 
-  const factory WeeklyStandingsState.failure(String message) = WeeklyStandingsFailure;
+  const factory WeeklyStandingsState.failure(String message) =
+      WeeklyStandingsFailure;
 }

@@ -6,6 +6,9 @@ import '../../blocs/invitation_management/invitation_management_bloc.dart';
 import '../../models/invitation_model.dart';
 import '../../repositories/invitation_repository.dart';
 import '../../repositories/season_repository.dart';
+import '../../widgets/empty_state_view.dart';
+import '../../widgets/error_state_view.dart';
+import '../../widgets/responsive_content.dart';
 
 class InviteManagementScreen extends StatelessWidget {
   const InviteManagementScreen({super.key});
@@ -37,28 +40,31 @@ class _InvitationManagementView extends StatelessWidget {
       body: BlocConsumer<InvitationManagementBloc, InvitationManagementState>(
         listener: (context, state) {
           if (state is InvitationManagementFailure) {
-            ScaffoldMessenger.of(context)
-                .showSnackBar(SnackBar(content: Text(state.message)));
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text(state.message)));
           }
         },
         builder: (context, state) {
-          if (state is InvitationManagementInitial || state is InvitationManagementLoading) {
+          if (state is InvitationManagementInitial ||
+              state is InvitationManagementLoading) {
             return const Center(child: CircularProgressIndicator());
           }
           if (state is InvitationManagementNoSeasons) {
-            return const Center(
-              child: Padding(
-                padding: EdgeInsets.all(24),
-                child: Text(
+            return const EmptyStateView(
+              icon: Icons.groups_outlined,
+              message:
                   'No pools yet. Create one from the API (POST /seasons) '
                   'before generating invites.',
-                  textAlign: TextAlign.center,
-                ),
-              ),
             );
           }
           if (state is InvitationManagementFailure) {
-            return const Center(child: Text('Something went wrong loading invites.'));
+            return ErrorStateView(
+              message: 'Something went wrong loading invites.',
+              onRetry: () => context.read<InvitationManagementBloc>().add(
+                const InvitationManagementEvent.started(),
+              ),
+            );
           }
           if (state is InvitationManagementLoaded) {
             return Column(
@@ -75,37 +81,46 @@ class _InvitationManagementView extends StatelessWidget {
                         .map(
                           (season) => DropdownMenuItem(
                             value: season.id,
-                            child: Text('${season.name} (${season.year}) · ${season.status}'),
+                            child: Text(
+                              '${season.name} (${season.year}) · ${season.status}',
+                            ),
                           ),
                         )
                         .toList(),
                     onChanged: (seasonId) {
                       if (seasonId == null) return;
-                      context
-                          .read<InvitationManagementBloc>()
-                          .add(InvitationManagementEvent.seasonSelected(seasonId));
+                      context.read<InvitationManagementBloc>().add(
+                        InvitationManagementEvent.seasonSelected(seasonId),
+                      );
                     },
                   ),
                 ),
                 Expanded(
                   child: state.invitations.isEmpty
-                      ? const Center(
-                          child: Text('No invite codes yet for this pool. Tap + to generate one.'),
+                      ? const EmptyStateView(
+                          icon: Icons.confirmation_number_outlined,
+                          message:
+                              'No invite codes yet for this pool. Tap + to generate one.',
                         )
-                      : CustomScrollView(
-                          slivers: [
-                            SliverPadding(
-                              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-                              sliver: SliverList(
-                                delegate: SliverChildBuilderDelegate(
-                                  (context, index) => _InvitationTile(
-                                    invitation: state.invitations[index],
+                      : ResponsiveContent(
+                          child: CustomScrollView(
+                            slivers: [
+                              SliverPadding(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 8,
+                                  horizontal: 4,
+                                ),
+                                sliver: SliverList(
+                                  delegate: SliverChildBuilderDelegate(
+                                    (context, index) => _InvitationTile(
+                                      invitation: state.invitations[index],
+                                    ),
+                                    childCount: state.invitations.length,
                                   ),
-                                  childCount: state.invitations.length,
                                 ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                 ),
               ],
@@ -171,9 +186,12 @@ class _InvitationManagementView extends StatelessWidget {
                             context: dialogContext,
                             initialDate: DateTime.now(),
                             firstDate: DateTime.now(),
-                            lastDate: DateTime.now().add(const Duration(days: 365)),
+                            lastDate: DateTime.now().add(
+                              const Duration(days: 365),
+                            ),
                           );
-                          if (picked != null) setState(() => expiresAt = picked);
+                          if (picked != null)
+                            setState(() => expiresAt = picked);
                         },
                         child: const Text('Pick Date'),
                       ),
@@ -222,35 +240,39 @@ class _InvitationTile extends StatelessWidget {
   final InvitationModel invitation;
 
   bool get _isExpired =>
-      invitation.expiresAt != null && invitation.expiresAt!.isBefore(DateTime.now());
+      invitation.expiresAt != null &&
+      invitation.expiresAt!.isBefore(DateTime.now());
 
   @override
   Widget build(BuildContext context) {
     final usedBy = invitation.usedBy;
     return ListTile(
       leading: const Icon(Icons.confirmation_number_outlined),
-      title: Text(invitation.code, style: const TextStyle(fontWeight: FontWeight.bold)),
+      title: Text(
+        invitation.code,
+        style: const TextStyle(fontWeight: FontWeight.bold),
+      ),
       subtitle: Text(_subtitle()),
       trailing: usedBy != null
           ? const _StatusChip(label: 'Redeemed')
           : _isExpired
-              ? const _StatusChip(label: 'Expired')
-              : Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.copy),
-                      tooltip: 'Copy code',
-                      onPressed: () => _copyCode(context),
-                    ),
-                    if (kIsWeb)
-                      IconButton(
-                        icon: const Icon(Icons.link),
-                        tooltip: 'Copy signup link',
-                        onPressed: () => _copyLink(context),
-                      ),
-                  ],
+          ? const _StatusChip(label: 'Expired')
+          : Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.copy),
+                  tooltip: 'Copy code',
+                  onPressed: () => _copyCode(context),
                 ),
+                if (kIsWeb)
+                  IconButton(
+                    icon: const Icon(Icons.link),
+                    tooltip: 'Copy signup link',
+                    onPressed: () => _copyLink(context),
+                  ),
+              ],
+            ),
     );
   }
 
@@ -272,7 +294,9 @@ class _InvitationTile extends StatelessWidget {
     final messenger = ScaffoldMessenger.of(context);
     await Clipboard.setData(ClipboardData(text: invitation.code));
     if (!context.mounted) return;
-    messenger.showSnackBar(const SnackBar(content: Text('Code copied to clipboard')));
+    messenger.showSnackBar(
+      const SnackBar(content: Text('Code copied to clipboard')),
+    );
   }
 
   Future<void> _copyLink(BuildContext context) async {
@@ -280,7 +304,9 @@ class _InvitationTile extends StatelessWidget {
     final link = '${Uri.base.origin}/signup?code=${invitation.code}';
     await Clipboard.setData(ClipboardData(text: link));
     if (!context.mounted) return;
-    messenger.showSnackBar(const SnackBar(content: Text('Link copied to clipboard')));
+    messenger.showSnackBar(
+      const SnackBar(content: Text('Link copied to clipboard')),
+    );
   }
 }
 
