@@ -1,13 +1,16 @@
 import axios from 'axios';
 import { logger } from './logger';
 
-const BASE_URL = 'https://site.api.espn.com/apis/site/v2/sports/football';
+const BASE_URL = 'https://site.api.espn.com/apis/site/v2/sports';
 
-export type EspnSport = 'college' | 'nfl';
+export type EspnSport = 'college' | 'nfl' | 'mlb';
 
+// Full path segment after BASE_URL, e.g. "football/nfl" or "baseball/mlb" —
+// college/pro football share the "football" category, MLB is under "baseball".
 const LEAGUE_PATH: Record<EspnSport, string> = {
-  college: 'college-football',
-  nfl: 'nfl',
+  college: 'football/college-football',
+  nfl: 'football/nfl',
+  mlb: 'baseball/mlb',
 };
 
 export interface EspnTeam {

@@ -3,7 +3,7 @@ import { getTeams } from '../lib/espn-client';
 
 const prisma = new PrismaClient();
 
-async function seedSport(sport: Sport, espnSport: 'college' | 'nfl') {
+async function seedSport(sport: Sport, espnSport: 'college' | 'nfl' | 'mlb') {
   const teams = await getTeams(espnSport);
   console.log(`Fetched ${teams.length} ${sport} teams from ESPN`);
 
@@ -32,6 +32,7 @@ async function main() {
   console.log('Seeding teams from ESPN...');
   await seedSport(Sport.nfl, 'nfl');
   await seedSport(Sport.college, 'college');
+  await seedSport(Sport.mlb, 'mlb');
   console.log('Team seeding complete.');
 }
 

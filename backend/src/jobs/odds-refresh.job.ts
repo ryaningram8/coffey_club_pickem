@@ -22,6 +22,7 @@ function namesMatch(teamName: string, oddsName: string): boolean {
 const SPORTS: Array<{ dbSport: Sport; oddsSport: OddsSport }> = [
   { dbSport: 'college', oddsSport: 'college' },
   { dbSport: 'nfl', oddsSport: 'nfl' },
+  { dbSport: 'mlb', oddsSport: 'mlb' },
 ];
 
 /**

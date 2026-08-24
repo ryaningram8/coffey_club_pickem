@@ -7,7 +7,7 @@ import { requireAnyCommissioner, requirePoolCommissioner } from '../lib/middlewa
 const idParams = z.object({ id: z.string().min(1) });
 
 const availableQuery = z.object({
-  sport: z.enum(['college', 'nfl']).optional(),
+  sport: z.enum(['college', 'nfl', 'mlb']).optional(),
 });
 
 const updateGameBody = z.object({

@@ -133,9 +133,7 @@ class _CommissionerWeekScreenState extends State<CommissionerWeekScreen> {
                         title: Text(
                           '${game.awayTeam.abbreviation} @ ${game.homeTeam.abbreviation}',
                         ),
-                        subtitle: Text(
-                          game.sport == 'college' ? 'College' : 'NFL',
-                        ),
+                        subtitle: Text(_sportLabel(game.sport)),
                         trailing:
                             (game.spread != null || game.overUnder != null)
                             ? Text(
@@ -210,5 +208,18 @@ class _CommissionerWeekScreenState extends State<CommissionerWeekScreen> {
     final d = dateTime.toLocal();
     return '${d.month}/${d.day}/${d.year} '
         '${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}';
+  }
+}
+
+String _sportLabel(String sport) {
+  switch (sport) {
+    case 'college':
+      return 'College';
+    case 'nfl':
+      return 'NFL';
+    case 'mlb':
+      return 'MLB';
+    default:
+      return sport;
   }
 }

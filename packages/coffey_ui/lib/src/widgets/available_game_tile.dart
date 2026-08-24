@@ -21,21 +21,36 @@ class AvailableGameTile extends StatelessWidget {
     final dateLabel =
         '${time.month}/${time.day} '
         '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
+    final hasStarted = game.gameTime.isBefore(DateTime.now());
 
     return CheckboxListTile(
       value: selected,
-      onChanged: onChanged,
+      onChanged: hasStarted ? null : onChanged,
+      enabled: !hasStarted,
       controlAffinity: ListTileControlAffinity.leading,
       title: Text('${game.awayTeam.name} @ ${game.homeTeam.name}'),
       subtitle: Text(
         [
-          game.sport == 'college' ? 'College' : 'NFL',
-          dateLabel,
+          _sportLabel(game.sport),
+          hasStarted ? 'Started' : dateLabel,
           if (game.spread != null) 'Spread ${game.spread}',
           if (game.overUnder != null) 'O/U ${game.overUnder}',
         ].join(' · '),
         style: theme.textTheme.bodySmall,
       ),
     );
+  }
+}
+
+String _sportLabel(String sport) {
+  switch (sport) {
+    case 'college':
+      return 'College';
+    case 'nfl':
+      return 'NFL';
+    case 'mlb':
+      return 'MLB';
+    default:
+      return sport;
   }
 }

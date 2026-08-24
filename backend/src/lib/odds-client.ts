@@ -3,11 +3,12 @@ import { logger } from './logger';
 
 const BASE_URL = 'https://api.the-odds-api.com/v4/sports';
 
-export type OddsSport = 'college' | 'nfl';
+export type OddsSport = 'college' | 'nfl' | 'mlb';
 
 const SPORT_KEY: Record<OddsSport, string> = {
   college: 'americanfootball_ncaaf',
   nfl: 'americanfootball_nfl',
+  mlb: 'baseball_mlb',
 };
 
 export interface GameOdds {

@@ -19,6 +19,7 @@ enum PoolRole {
 enum Sport {
   college
   nfl
+  mlb
 }
 
 enum SeasonStatus {

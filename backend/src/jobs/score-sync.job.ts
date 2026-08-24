@@ -5,7 +5,7 @@ import { isWeekAllGamesFinal } from '../services/results.service';
 import { WeekCompleteJob } from './week-complete.job';
 import { logger } from '../lib/logger';
 
-const SPORTS: Sport[] = ['college', 'nfl'];
+const SPORTS: Sport[] = ['college', 'nfl', 'mlb'];
 
 /**
  * Pulls live scores/status from ESPN for every non-final game and syncs

@@ -26,7 +26,7 @@ const assignGamesBody = z.object({
     .array(
       z.object({
         espnGameId: z.string().min(1),
-        sport: z.enum(['college', 'nfl']),
+        sport: z.enum(['college', 'nfl', 'mlb']),
         gameTime: z.string().datetime(),
         homeTeam: assignGameTeam,
         awayTeam: assignGameTeam,

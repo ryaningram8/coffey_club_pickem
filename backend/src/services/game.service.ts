@@ -30,8 +30,7 @@ function namesMatch(a: string, b: string): boolean {
 }
 
 async function getAvailableForSport(dbSport: Sport): Promise<AvailableGameDto[]> {
-  const espnSport = dbSport === 'college' ? 'college' : 'nfl';
-  const [games, odds] = await Promise.all([getScoreboardSafe(espnSport), getOdds(espnSport)]);
+  const [games, odds] = await Promise.all([getScoreboardSafe(dbSport), getOdds(dbSport)]);
 
   return games.map((game) => {
     const match = odds.find(
@@ -66,7 +65,7 @@ async function getAvailableForSport(dbSport: Sport): Promise<AvailableGameDto[]>
  * matching heuristic used post-publish).
  */
 export async function getAvailableGames(sport?: Sport): Promise<AvailableGameDto[]> {
-  const sports: Sport[] = sport ? [sport] : ['college', 'nfl'];
+  const sports: Sport[] = sport ? [sport] : ['college', 'nfl', 'mlb'];
   const results = await Promise.all(sports.map(getAvailableForSport));
   return results.flat();
 }

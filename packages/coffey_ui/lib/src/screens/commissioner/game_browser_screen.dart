@@ -39,6 +39,7 @@ class _GameBrowserView extends StatefulWidget {
 class _GameBrowserViewState extends State<_GameBrowserView> {
   final _searchController = TextEditingController();
   String _query = '';
+  String? _sportFilter;
 
   @override
   void dispose() {
@@ -78,18 +79,20 @@ class _GameBrowserViewState extends State<_GameBrowserView> {
           }
           if (state is GameSelectionLoaded) {
             final filtered = state.available.where((g) {
+              if (_sportFilter != null && g.sport != _sportFilter) return false;
               if (_query.isEmpty) return true;
               final q = _query.toLowerCase();
               return g.homeTeam.name.toLowerCase().contains(q) ||
                   g.awayTeam.name.toLowerCase().contains(q);
             }).toList();
 
-            final collegeCount = state.selected
-                .where((g) => g.sport == 'college')
-                .length;
-            final nflCount = state.selected
-                .where((g) => g.sport == 'nfl')
-                .length;
+            final selectedCounts = <String, int>{};
+            for (final g in state.selected) {
+              selectedCounts[g.sport] = (selectedCounts[g.sport] ?? 0) + 1;
+            }
+            final countLabel = selectedCounts.entries
+                .map((e) => _sportCountLabel(e.key, e.value))
+                .join(' · ');
 
             return Column(
               children: [
@@ -107,10 +110,39 @@ class _GameBrowserViewState extends State<_GameBrowserView> {
                 ),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 12),
+                  child: Wrap(
+                    spacing: 8,
+                    children: [
+                      _SportFilterChip(
+                        label: 'All',
+                        selected: _sportFilter == null,
+                        onSelected: () => setState(() => _sportFilter = null),
+                      ),
+                      _SportFilterChip(
+                        label: 'College',
+                        selected: _sportFilter == 'college',
+                        onSelected: () =>
+                            setState(() => _sportFilter = 'college'),
+                      ),
+                      _SportFilterChip(
+                        label: 'NFL',
+                        selected: _sportFilter == 'nfl',
+                        onSelected: () => setState(() => _sportFilter = 'nfl'),
+                      ),
+                      _SportFilterChip(
+                        label: 'MLB',
+                        selected: _sportFilter == 'mlb',
+                        onSelected: () => setState(() => _sportFilter = 'mlb'),
+                      ),
+                    ],
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
                   child: Align(
                     alignment: Alignment.centerLeft,
                     child: Text(
-                      'Selected: $collegeCount / 14 college · $nflCount / 6 NFL',
+                      countLabel.isEmpty ? 'Selected: none yet' : 'Selected: $countLabel',
                       style: Theme.of(context).textTheme.labelLarge,
                     ),
                   ),
@@ -177,6 +209,19 @@ class _GameBrowserViewState extends State<_GameBrowserView> {
     );
   }
 
+  static const _sportTargets = {'college': 14, 'nfl': 6};
+
+  String _sportCountLabel(String sport, int count) {
+    final label = switch (sport) {
+      'college' => 'college',
+      'nfl' => 'NFL',
+      'mlb' => 'MLB',
+      _ => sport,
+    };
+    final target = _sportTargets[sport];
+    return target != null ? '$count / $target $label' : '$count $label';
+  }
+
   void _confirmPublish(BuildContext context, int count) {
     final bloc = context.read<GameSelectionBloc>();
     showDialog<void>(
@@ -200,6 +245,27 @@ class _GameBrowserViewState extends State<_GameBrowserView> {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _SportFilterChip extends StatelessWidget {
+  const _SportFilterChip({
+    required this.label,
+    required this.selected,
+    required this.onSelected,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return FilterChip(
+      label: Text(label),
+      selected: selected,
+      onSelected: (_) => onSelected(),
     );
   }
 }
