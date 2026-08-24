@@ -29,8 +29,38 @@ function namesMatch(a: string, b: string): boolean {
   return na === nb || na.includes(nb) || nb.includes(na);
 }
 
-async function getAvailableForSport(dbSport: Sport): Promise<AvailableGameDto[]> {
-  const [games, odds] = await Promise.all([getScoreboardSafe(dbSport), getOdds(dbSport)]);
+export interface DateRange {
+  start: Date;
+  end: Date;
+}
+
+const toEspnDate = (d: Date) => d.toISOString().slice(0, 10).replace(/-/g, '');
+
+/**
+ * Today through 8 days out, as ESPN's `dates=YYYYMMDD-YYYYMMDD` range param.
+ * ESPN's scoreboard defaults to its own idea of "current week", which near a
+ * week boundary can mean the slate that just finished rather than the
+ * upcoming one — an explicit forward-looking range avoids that. Starting
+ * from today (not tomorrow) keeps same-day games visible too. Used only when
+ * the caller (commissioner) hasn't picked their own range — e.g. to line up
+ * games for a week being set up further out.
+ */
+function defaultDateRange(days = 8): DateRange {
+  const start = new Date();
+  const end = new Date();
+  end.setDate(end.getDate() + days);
+  return { start, end };
+}
+
+async function getAvailableForSport(
+  dbSport: Sport,
+  dateRange: DateRange,
+): Promise<AvailableGameDto[]> {
+  const espnDates = `${toEspnDate(dateRange.start)}-${toEspnDate(dateRange.end)}`;
+  const [games, odds] = await Promise.all([
+    getScoreboardSafe(dbSport, { date: espnDates }),
+    getOdds(dbSport),
+  ]);
 
   return games.map((game) => {
     const match = odds.find(
@@ -64,8 +94,12 @@ async function getAvailableForSport(dbSport: Sport): Promise<AvailableGameDto[]>
  * matching team names (best-effort; see odds-refresh.job.ts for the same
  * matching heuristic used post-publish).
  */
-export async function getAvailableGames(sport?: Sport): Promise<AvailableGameDto[]> {
+export async function getAvailableGames(
+  sport?: Sport,
+  dateRange?: DateRange,
+): Promise<AvailableGameDto[]> {
   const sports: Sport[] = sport ? [sport] : ['college', 'nfl', 'mlb'];
-  const results = await Promise.all(sports.map(getAvailableForSport));
+  const range = dateRange ?? defaultDateRange();
+  const results = await Promise.all(sports.map((s) => getAvailableForSport(s, range)));
   return results.flat();
 }

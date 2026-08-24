@@ -7,4 +7,8 @@ class GameSelectionEvent with _$GameSelectionEvent {
       GameSelectionGameToggled;
   const factory GameSelectionEvent.publishRequested() =
       GameSelectionPublishRequested;
+  const factory GameSelectionEvent.dateRangeChanged({
+    required DateTime startDate,
+    required DateTime endDate,
+  }) = GameSelectionDateRangeChanged;
 }

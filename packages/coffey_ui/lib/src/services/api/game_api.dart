@@ -10,7 +10,11 @@ abstract class GameApi {
   factory GameApi(Dio dio, {String baseUrl}) = _GameApi;
 
   @GET('/games/available')
-  Future<List<AvailableGameModel>> getAvailableGames(@Query('sport') String? sport);
+  Future<List<AvailableGameModel>> getAvailableGames(
+    @Query('sport') String? sport,
+    @Query('startDate') String? startDate,
+    @Query('endDate') String? endDate,
+  );
 
   @PUT('/games/{id}')
   Future<GameModel> updateGame(@Path('id') String id, @Body() Map<String, dynamic> body);

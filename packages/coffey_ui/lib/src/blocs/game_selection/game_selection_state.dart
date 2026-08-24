@@ -8,7 +8,10 @@ class GameSelectionState with _$GameSelectionState {
   const factory GameSelectionState.loaded({
     required List<AvailableGameModel> available,
     required List<AvailableGameModel> selected,
+    required DateTime startDate,
+    required DateTime endDate,
     @Default(false) bool isPublishing,
+    @Default(false) bool isRefetching,
   }) = GameSelectionLoaded;
 
   const factory GameSelectionState.published(WeekModel week) =

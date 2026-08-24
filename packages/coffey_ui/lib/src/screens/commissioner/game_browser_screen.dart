@@ -138,6 +138,33 @@ class _GameBrowserViewState extends State<_GameBrowserView> {
                   ),
                 ),
                 Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          icon: const Icon(Icons.calendar_today, size: 16),
+                          label: Text('From ${_formatDate(state.startDate)}'),
+                          onPressed: state.isRefetching
+                              ? null
+                              : () => _pickStartDate(context, state),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          icon: const Icon(Icons.calendar_today, size: 16),
+                          label: Text('To ${_formatDate(state.endDate)}'),
+                          onPressed: state.isRefetching
+                              ? null
+                              : () => _pickEndDate(context, state),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                if (state.isRefetching) const LinearProgressIndicator(),
+                Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 12),
                   child: Align(
                     alignment: Alignment.centerLeft,
@@ -206,6 +233,43 @@ class _GameBrowserViewState extends State<_GameBrowserView> {
           return const SizedBox.shrink();
         },
       ),
+    );
+  }
+
+  static String _formatDate(DateTime d) => '${d.month}/${d.day}';
+
+  static DateTime _today() {
+    final now = DateTime.now();
+    return DateTime(now.year, now.month, now.day);
+  }
+
+  Future<void> _pickStartDate(BuildContext context, GameSelectionLoaded state) async {
+    final today = _today();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: state.startDate.isBefore(today) ? today : state.startDate,
+      firstDate: today,
+      lastDate: today.add(const Duration(days: 180)),
+    );
+    if (picked == null || !context.mounted) return;
+    final endDate = picked.isAfter(state.endDate)
+        ? picked.add(const Duration(days: 1))
+        : state.endDate;
+    context.read<GameSelectionBloc>().add(
+      GameSelectionEvent.dateRangeChanged(startDate: picked, endDate: endDate),
+    );
+  }
+
+  Future<void> _pickEndDate(BuildContext context, GameSelectionLoaded state) async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: state.endDate,
+      firstDate: state.startDate,
+      lastDate: state.startDate.add(const Duration(days: 180)),
+    );
+    if (picked == null || !context.mounted) return;
+    context.read<GameSelectionBloc>().add(
+      GameSelectionEvent.dateRangeChanged(startDate: state.startDate, endDate: picked),
     );
   }
 

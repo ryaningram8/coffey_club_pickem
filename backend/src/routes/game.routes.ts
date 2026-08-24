@@ -6,9 +6,18 @@ import { requireAnyCommissioner, requirePoolCommissioner } from '../lib/middlewa
 
 const idParams = z.object({ id: z.string().min(1) });
 
-const availableQuery = z.object({
-  sport: z.enum(['college', 'nfl', 'mlb']).optional(),
-});
+const availableQuery = z
+  .object({
+    sport: z.enum(['college', 'nfl', 'mlb']).optional(),
+    startDate: z.string().date().optional(), // YYYY-MM-DD
+    endDate: z.string().date().optional(), // YYYY-MM-DD
+  })
+  .refine((q) => (q.startDate == null) === (q.endDate == null), {
+    message: 'startDate and endDate must be provided together',
+  })
+  .refine((q) => q.startDate == null || q.startDate <= q.endDate!, {
+    message: 'startDate must not be after endDate',
+  });
 
 const updateGameBody = z.object({
   gameTime: z.string().datetime().optional(),
@@ -23,8 +32,10 @@ export async function gameRoutes(server: FastifyInstance) {
     '/available',
     { preHandler: requireAnyCommissioner() },
     async (request) => {
-      const { sport } = availableQuery.parse(request.query);
-      return gameService.getAvailableGames(sport);
+      const { sport, startDate, endDate } = availableQuery.parse(request.query);
+      const dateRange =
+        startDate && endDate ? { start: new Date(startDate), end: new Date(endDate) } : undefined;
+      return gameService.getAvailableGames(sport, dateRange);
     },
   );
 

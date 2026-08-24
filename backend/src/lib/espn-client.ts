@@ -116,7 +116,7 @@ export async function getScoreboard(
   const params: Record<string, string | number> = {};
   if (sport === 'college') params.groups = 80;
   if (opts.week) params.week = opts.week;
-  if (opts.date) params.dates = opts.date; // YYYYMMDD
+  if (opts.date) params.dates = opts.date; // YYYYMMDD, or a YYYYMMDD-YYYYMMDD range
 
   const { data } = await axios.get<EspnScoreboardResponse>(
     `${BASE_URL}/${LEAGUE_PATH[sport]}/scoreboard`,

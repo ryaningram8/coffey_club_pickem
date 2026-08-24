@@ -9,8 +9,21 @@ class GameRepository with ApiErrorMapper {
 
   final GameApi _api;
 
-  Future<List<AvailableGameModel>> getAvailableGames({String? sport}) =>
-      guard(() => _api.getAvailableGames(sport));
+  Future<List<AvailableGameModel>> getAvailableGames({
+    String? sport,
+    DateTime? startDate,
+    DateTime? endDate,
+  }) => guard(
+    () => _api.getAvailableGames(sport, _formatDate(startDate), _formatDate(endDate)),
+  );
+
+  static String? _formatDate(DateTime? d) {
+    if (d == null) return null;
+    final y = d.year.toString().padLeft(4, '0');
+    final m = d.month.toString().padLeft(2, '0');
+    final day = d.day.toString().padLeft(2, '0');
+    return '$y-$m-$day';
+  }
 
   Future<GameModel> updateGame(
     String id, {
