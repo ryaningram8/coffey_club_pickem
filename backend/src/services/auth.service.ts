@@ -142,11 +142,9 @@ export async function googleAuth(input: {
         where: { id: emailUser.id },
         data: { googleId },
       });
-    } else {
-      // New user — invite code required
-      if (!input.inviteCode) {
-        throw new ValidationError('An invite code is required to create a new account');
-      }
+    } else if (input.inviteCode) {
+      // New user with an invite code already in hand (e.g. a deep-linked
+      // signup) — join the pool immediately as part of account creation.
       const invitation = await validateInviteCode(input.inviteCode);
 
       user = await prisma.$transaction(async (tx) => {
@@ -164,6 +162,11 @@ export async function googleAuth(input: {
         }
         return newUser;
       });
+    } else {
+      // New user, no invite code yet — create the account so Google
+      // sign-in succeeds. They land with zero pools; PoolSwitcherBar's
+      // "Join a pool" flow (redeemInvitation) is how they actually get in.
+      user = await prisma.user.create({ data: { email, name, googleId } });
     }
   }
 

@@ -33,6 +33,10 @@ dependencies:
 
   # Google Sign-In
   google_sign_in: ^6.2.0
+  # Web only — renders Google's own "Sign in with Google" button. On web,
+  # `google_sign_in`'s imperative `signIn()` cannot return an ID token (GIS
+  # policy restricts ID tokens to Google-rendered UI); see google_web_button.dart.
+  google_sign_in_web: ^0.12.4
 
   # Typography
   google_fonts: ^6.2.1

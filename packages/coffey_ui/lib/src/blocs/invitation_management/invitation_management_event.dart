@@ -13,4 +13,9 @@ class InvitationManagementEvent with _$InvitationManagementEvent {
     int? count,
     DateTime? expiresAt,
   }) = InvitationManagementCodeGenerateRequested;
+
+  const factory InvitationManagementEvent.poolCreated({
+    required String name,
+    required int year,
+  }) = InvitationManagementPoolCreated;
 }

@@ -25,6 +25,10 @@ class InviteManagementScreen extends StatelessWidget {
   }
 }
 
+/// Sentinel dropdown value for the "Create new pool" entry — distinct from
+/// any real season id (uuid), so it can never collide.
+const _createPoolValue = '__create_new_pool__';
+
 class _InvitationManagementView extends StatelessWidget {
   const _InvitationManagementView();
 
@@ -51,11 +55,22 @@ class _InvitationManagementView extends StatelessWidget {
             return const Center(child: CircularProgressIndicator());
           }
           if (state is InvitationManagementNoSeasons) {
-            return const EmptyStateView(
-              icon: Icons.groups_outlined,
-              message:
-                  'No pools yet. Create one from the API (POST /seasons) '
-                  'before generating invites.',
+            return Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const EmptyStateView(
+                    icon: Icons.groups_outlined,
+                    message: 'No pools yet. Create one to start generating invites.',
+                  ),
+                  const SizedBox(height: 8),
+                  FilledButton.icon(
+                    onPressed: () => _showCreatePoolDialog(context),
+                    icon: const Icon(Icons.add),
+                    label: const Text('Create Pool'),
+                  ),
+                ],
+              ),
             );
           }
           if (state is InvitationManagementFailure) {
@@ -77,18 +92,33 @@ class _InvitationManagementView extends StatelessWidget {
                       labelText: 'Pool',
                       border: OutlineInputBorder(),
                     ),
-                    items: state.seasons
-                        .map(
-                          (season) => DropdownMenuItem(
-                            value: season.id,
-                            child: Text(
-                              '${season.name} (${season.year}) · ${season.status}',
-                            ),
+                    items: [
+                      ...state.seasons.map(
+                        (season) => DropdownMenuItem(
+                          value: season.id,
+                          child: Text(
+                            '${season.name} (${season.year}) · ${season.status}',
                           ),
-                        )
-                        .toList(),
+                        ),
+                      ),
+                      const DropdownMenuItem(
+                        value: _createPoolValue,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.add, size: 18),
+                            SizedBox(width: 8),
+                            Text('Create new pool'),
+                          ],
+                        ),
+                      ),
+                    ],
                     onChanged: (seasonId) {
                       if (seasonId == null) return;
+                      if (seasonId == _createPoolValue) {
+                        _showCreatePoolDialog(context);
+                        return;
+                      }
                       context.read<InvitationManagementBloc>().add(
                         InvitationManagementEvent.seasonSelected(seasonId),
                       );
@@ -222,6 +252,60 @@ class _InvitationManagementView extends StatelessWidget {
               ],
             );
           },
+        );
+      },
+    );
+  }
+
+  void _showCreatePoolDialog(BuildContext context) {
+    final bloc = context.read<InvitationManagementBloc>();
+    final nameController = TextEditingController();
+    final yearController = TextEditingController(
+      text: DateTime.now().year.toString(),
+    );
+
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Create Pool'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameController,
+                autofocus: true,
+                decoration: const InputDecoration(
+                  labelText: 'Pool name',
+                  hintText: 'e.g. 2026 Season',
+                ),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: yearController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(labelText: 'Year'),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () {
+                final name = nameController.text.trim();
+                final year = int.tryParse(yearController.text.trim());
+                if (name.isEmpty || year == null) return;
+                bloc.add(
+                  InvitationManagementEvent.poolCreated(name: name, year: year),
+                );
+                Navigator.of(dialogContext).pop();
+              },
+              child: const Text('Create'),
+            ),
+          ],
         );
       },
     );

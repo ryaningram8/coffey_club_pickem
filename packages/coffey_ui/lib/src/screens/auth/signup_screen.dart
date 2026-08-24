@@ -1,8 +1,10 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../blocs/auth/auth_bloc.dart';
 import '../../router/app_routes.dart';
+import '../../widgets/google_web_button.dart';
 
 class SignupScreen extends StatefulWidget {
   /// Invite code may be pre-populated from a deep link (e.g. /join?code=ABC123).
@@ -49,6 +51,14 @@ class _SignupScreenState extends State<SignupScreen> {
         ),
       );
     }
+  }
+
+  // Google sign-in ignores whatever's in the form above (including the
+  // invite code field) — a brand-new account created this way lands with
+  // zero pools and joins one afterward via PoolSwitcherBar's "Join a pool"
+  // dialog, same as clicking Google from the login screen.
+  void _onGoogleSignIn() {
+    context.read<AuthBloc>().add(AuthGoogleLoginRequested());
   }
 
   @override
@@ -192,6 +202,15 @@ class _SignupScreenState extends State<SignupScreen> {
                                 )
                               : const Text('Create Account'),
                         ),
+                        const SizedBox(height: 12),
+                        if (kIsWeb)
+                          buildGoogleWebButton()
+                        else
+                          OutlinedButton.icon(
+                            onPressed: isLoading ? null : _onGoogleSignIn,
+                            icon: const Icon(Icons.g_mobiledata, size: 24),
+                            label: const Text('Continue with Google'),
+                          ),
                         const SizedBox(height: 24),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,

@@ -1,8 +1,10 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../blocs/auth/auth_bloc.dart';
 import '../../router/app_routes.dart';
+import '../../widgets/google_web_button.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -143,11 +145,18 @@ class _LoginScreenState extends State<LoginScreen> {
                               : const Text('Sign In'),
                         ),
                         const SizedBox(height: 12),
-                        OutlinedButton.icon(
-                          onPressed: isLoading ? null : _onGoogleSignIn,
-                          icon: const Icon(Icons.g_mobiledata, size: 24),
-                          label: const Text('Continue with Google'),
-                        ),
+                        // Web can't use our own button — GIS only returns an
+                        // ID token through its own rendered button, not an
+                        // imperative signIn() call. See AuthRepository's
+                        // webGoogleSignInResults for how the click completes.
+                        if (kIsWeb)
+                          buildGoogleWebButton()
+                        else
+                          OutlinedButton.icon(
+                            onPressed: isLoading ? null : _onGoogleSignIn,
+                            icon: const Icon(Icons.g_mobiledata, size: 24),
+                            label: const Text('Continue with Google'),
+                          ),
                         const SizedBox(height: 24),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,

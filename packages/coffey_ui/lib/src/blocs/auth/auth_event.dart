@@ -19,5 +19,15 @@ class AuthEvent with _$AuthEvent {
 
   const factory AuthEvent.googleLoginRequested() = AuthGoogleLoginRequested;
 
+  /// Bridges AuthRepository.webGoogleSignInResults (see auth_bloc.dart's
+  /// constructor) into the normal event->emit flow — the web Google button
+  /// completes outside of any bloc-dispatched event, so this is how its
+  /// result reaches state.
+  const factory AuthEvent.googleWebSignInSucceeded({required UserModel user}) =
+      AuthGoogleWebSignInSucceeded;
+
+  const factory AuthEvent.googleWebSignInFailed({required String message}) =
+      AuthGoogleWebSignInFailed;
+
   const factory AuthEvent.logoutRequested() = AuthLogoutRequested;
 }

@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import '../../models/user_model.dart';
@@ -15,10 +18,32 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<AuthLoginRequested>(_onLoginRequested);
     on<AuthSignupRequested>(_onSignupRequested);
     on<AuthGoogleLoginRequested>(_onGoogleLoginRequested);
+    on<AuthGoogleWebSignInSucceeded>(_onGoogleWebSignInSucceeded);
+    on<AuthGoogleWebSignInFailed>(_onGoogleWebSignInFailed);
     on<AuthLogoutRequested>(_onLogoutRequested);
+
+    // The rendered web Google button (see widgets/google_web_button.dart)
+    // completes sign-in on its own, outside of any bloc-dispatched event —
+    // this bridges that into the normal event stream. Guarded to web only:
+    // on native, `googleLogin()`'s imperative signIn() call below *also*
+    // fires onCurrentUserChanged, which would otherwise double-process it.
+    if (kIsWeb) {
+      _webGoogleSub = _authRepository.webGoogleSignInResults.listen(
+        (user) => add(AuthEvent.googleWebSignInSucceeded(user: user)),
+        onError: (Object error) =>
+            add(AuthEvent.googleWebSignInFailed(message: error.toString())),
+      );
+    }
   }
 
   final AuthRepository _authRepository;
+  StreamSubscription<UserModel>? _webGoogleSub;
+
+  @override
+  Future<void> close() {
+    _webGoogleSub?.cancel();
+    return super.close();
+  }
 
   Future<void> _onStarted(AuthStarted event, Emitter<AuthState> emit) async {
     emit(const AuthState.loading());
@@ -79,6 +104,20 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     } catch (e) {
       emit(AuthState.failure(e.toString()));
     }
+  }
+
+  Future<void> _onGoogleWebSignInSucceeded(
+    AuthGoogleWebSignInSucceeded event,
+    Emitter<AuthState> emit,
+  ) async {
+    emit(AuthState.authenticated(event.user));
+  }
+
+  Future<void> _onGoogleWebSignInFailed(
+    AuthGoogleWebSignInFailed event,
+    Emitter<AuthState> emit,
+  ) async {
+    emit(AuthState.failure(event.message));
   }
 
   Future<void> _onLogoutRequested(

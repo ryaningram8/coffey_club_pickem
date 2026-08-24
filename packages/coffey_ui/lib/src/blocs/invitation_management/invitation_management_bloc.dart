@@ -20,6 +20,7 @@ class InvitationManagementBloc
     on<InvitationManagementStarted>(_onStarted);
     on<InvitationManagementSeasonSelected>(_onSeasonSelected);
     on<InvitationManagementCodeGenerateRequested>(_onCodeGenerateRequested);
+    on<InvitationManagementPoolCreated>(_onPoolCreated);
   }
 
   final SeasonRepository _seasonRepository;
@@ -90,6 +91,32 @@ class InvitationManagementBloc
         current.selectedSeasonId,
       );
       emit(current.copyWith(invitations: invitations, isGenerating: false));
+    } catch (e) {
+      emit(InvitationManagementState.failure(e.toString()));
+    }
+  }
+
+  /// Creates a new pool and switches straight to it — reachable both from
+  /// the "no pools yet" empty state and from the pool dropdown's "Create
+  /// new pool" entry.
+  Future<void> _onPoolCreated(
+    InvitationManagementPoolCreated event,
+    Emitter<InvitationManagementState> emit,
+  ) async {
+    try {
+      final created = await _seasonRepository.createSeason(
+        name: event.name,
+        year: event.year,
+      );
+      final seasons = await _seasonRepository.getSeasons();
+      final invitations = await _invitationRepository.getInvitations(created.id);
+      emit(
+        InvitationManagementState.loaded(
+          seasons: seasons,
+          selectedSeasonId: created.id,
+          invitations: invitations,
+        ),
+      );
     } catch (e) {
       emit(InvitationManagementState.failure(e.toString()));
     }

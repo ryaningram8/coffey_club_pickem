@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:google_sign_in/google_sign_in.dart';
 import '../models/auth_response_model.dart';
 import '../models/user_model.dart';
@@ -22,7 +23,9 @@ class AuthRepository with ApiErrorMapper {
     clientId: const String.fromEnvironment('GOOGLE_CLIENT_ID'),
     // Ensures the ID token's audience matches the backend's GOOGLE_CLIENT_ID
     // on Android/iOS too, where `clientId` above is otherwise ignored.
-    serverClientId: const String.fromEnvironment('GOOGLE_CLIENT_ID'),
+    // google_sign_in_web asserts serverClientId == null on web — must be
+    // omitted there, or plugin init fails (silently, since it's unawaited).
+    serverClientId: kIsWeb ? null : const String.fromEnvironment('GOOGLE_CLIENT_ID'),
   );
 
   Future<UserModel> login({
@@ -57,7 +60,22 @@ class AuthRepository with ApiErrorMapper {
   Future<UserModel> googleLogin({String? inviteCode}) async {
     final account = await _googleSignIn.signIn();
     if (account == null) throw Exception('Google sign-in cancelled');
+    return _completeGoogleSignIn(account, inviteCode: inviteCode);
+  }
 
+  /// Web sign-ins complete via GIS's rendered button (see
+  /// widgets/google_web_button.dart) rather than an imperative call — the
+  /// button click itself drives `_googleSignIn.onCurrentUserChanged`, so
+  /// LoginScreen listens to this instead of calling `googleLogin()`.
+  Stream<UserModel> get webGoogleSignInResults => _googleSignIn
+      .onCurrentUserChanged
+      .where((account) => account != null)
+      .asyncMap((account) => _completeGoogleSignIn(account!));
+
+  Future<UserModel> _completeGoogleSignIn(
+    GoogleSignInAccount account, {
+    String? inviteCode,
+  }) async {
     final googleAuth = await account.authentication;
     final idToken = googleAuth.idToken;
     if (idToken == null) throw Exception('Google ID token unavailable');
@@ -75,7 +93,10 @@ class AuthRepository with ApiErrorMapper {
   Future<void> logout() async {
     await Future.wait([
       _tokenStorage.clearAll(),
-      _googleSignIn.signOut(),
+      // Best-effort: an unguarded failure here (e.g. the web GIS plugin
+      // throwing) would reject the whole Future.wait and skip emitting
+      // AuthState.unauthenticated — local logout must succeed regardless.
+      _googleSignIn.signOut().catchError((_) => null),
       // Best-effort: on web this clears the HttpOnly refresh cookie
       // server-side (nothing client-side can touch it directly). A failure
       // here shouldn't block local logout — worst case the cookie outlives
