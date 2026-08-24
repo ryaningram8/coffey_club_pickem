@@ -30,6 +30,27 @@ async function start() {
 
   await server.register(cookie);
 
+  // The shared Flutter Dio client sends `Content-Type: application/json` on
+  // every request (see ApiClient in api_client.dart), even no-body ones like
+  // POST /invitations/:code/redeem — Fastify's default JSON parser rejects
+  // an empty body outright when that header is present, so treat empty as
+  // "no body" instead of a parse error.
+  server.addContentTypeParser(
+    'application/json',
+    { parseAs: 'string' },
+    (_request, body, done) => {
+      if (body === '') {
+        done(null, undefined);
+        return;
+      }
+      try {
+        done(null, JSON.parse(body as string));
+      } catch (err) {
+        done(err as Error, undefined);
+      }
+    },
+  );
+
   // Global rate-limit safety net; auth routes set stricter per-route overrides
   // (see auth.routes.ts) since they're the actual brute-force/abuse surface.
   await server.register(rateLimit, {
