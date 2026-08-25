@@ -124,6 +124,46 @@ class _CommissionerWeekScreenState extends State<CommissionerWeekScreen> {
                   ),
                 ),
                 const SizedBox(height: 16),
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Weekly Pot',
+                                style: Theme.of(context).textTheme.titleSmall,
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                week.pot != null
+                                    ? '\$${week.pot}'
+                                    : 'No pot set — payouts won\'t be tracked.',
+                                style: week.pot == null
+                                    ? TextStyle(
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.onSurfaceVariant,
+                                      )
+                                    : null,
+                              ),
+                            ],
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.edit_outlined),
+                          tooltip: 'Edit pot',
+                          onPressed: () => _editPot(context, week),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
                 if (week.games.isEmpty)
                   const Text('No games assigned yet.')
                 else
@@ -201,6 +241,53 @@ class _CommissionerWeekScreenState extends State<CommissionerWeekScreen> {
       messenger.showSnackBar(
         SnackBar(content: Text('Could not save message: $e')),
       );
+    }
+  }
+
+  Future<void> _editPot(BuildContext context, WeekModel week) async {
+    final controller = TextEditingController(text: week.pot ?? '');
+    final weekRepository = context.read<WeekRepository>();
+    final messenger = ScaffoldMessenger.of(context);
+
+    final text = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Weekly Pot'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          decoration: const InputDecoration(prefixText: r'$', hintText: '0.00'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(controller.text),
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+    if (text == null) return;
+
+    final trimmed = text.trim();
+    final pot = trimmed.isEmpty ? null : double.tryParse(trimmed);
+    if (trimmed.isNotEmpty && pot == null) {
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Enter a valid dollar amount.')),
+      );
+      return;
+    }
+
+    try {
+      await weekRepository.updatePot(widget.weekId, pot);
+      if (!mounted) return;
+      setState(() => _weekFuture = weekRepository.getWeek(widget.weekId));
+    } catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text('Could not save pot: $e')));
     }
   }
 

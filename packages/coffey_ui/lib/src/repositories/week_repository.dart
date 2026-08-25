@@ -47,6 +47,12 @@ class WeekRepository with ApiErrorMapper {
     return guard(() => _api.updateWeek(weekId, {'commissionerMessage': message}));
   }
 
+  /// Same single-purpose shape as [updateCommissionerMessage] — always sends
+  /// `pot`, null included, so clearing it back out is possible.
+  Future<WeekModel> updatePot(String weekId, double? pot) {
+    return guard(() => _api.updateWeek(weekId, {'pot': pot}));
+  }
+
   Future<WeekModel> assignGames(String weekId, List<AvailableGameModel> games) {
     Map<String, dynamic> team(AvailableTeamModel t) => {
           'espnId': t.espnId,
