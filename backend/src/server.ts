@@ -4,7 +4,7 @@ import cookie from '@fastify/cookie';
 import rateLimit from '@fastify/rate-limit';
 import { ZodError } from 'zod';
 import { AppError } from './lib/errors';
-import { fastifyLoggerOptions, logger } from './lib/logger';
+import { fastifyLoggerOptions } from './lib/logger';
 import { registerRoutes } from './routes';
 import { registerJobs } from './jobs/register';
 
@@ -69,7 +69,7 @@ async function start() {
 
   // Global error handler
   server.setErrorHandler(
-    (error: FastifyError | Error, _request: FastifyRequest, reply: FastifyReply) => {
+    (error: FastifyError | Error, request: FastifyRequest, reply: FastifyReply) => {
       if (error instanceof AppError) {
         return reply.code(error.statusCode).send({ error: error.message, code: error.code });
       }
@@ -79,8 +79,13 @@ async function start() {
           .join(', ');
         return reply.code(400).send({ error: message, code: 'VALIDATION_ERROR' });
       }
-      logger.error(error);
-      return reply.code(500).send({ error: 'Internal server error', code: 'INTERNAL_ERROR' });
+      // request.log (not the standalone logger) so this error carries the same
+      // reqId as the request's own access log line — lets a player-reported
+      // error be grepped straight to its exact request instead of matched by timestamp.
+      request.log.error(error);
+      return reply
+        .code(500)
+        .send({ error: 'Internal server error', code: 'INTERNAL_ERROR', reqId: request.id });
     },
   );
 
