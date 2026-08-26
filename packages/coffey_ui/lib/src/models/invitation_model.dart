@@ -14,8 +14,9 @@ abstract class InvitationModel with _$InvitationModel {
     String? email,
     DateTime? expiresAt,
     required DateTime createdAt,
-    DateTime? usedAt,
-    InvitationRedeemerModel? usedBy,
+    int? maxUses,
+    required int useCount,
+    @Default([]) List<InvitationRedeemerModel> redeemedBy,
   }) = _InvitationModel;
 
   factory InvitationModel.fromJson(Map<String, dynamic> json) =>

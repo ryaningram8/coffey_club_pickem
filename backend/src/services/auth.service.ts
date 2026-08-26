@@ -52,9 +52,14 @@ function toUserDto(user: {
 }
 
 async function validateInviteCode(code: string) {
-  const invitation = await prisma.invitation.findUnique({ where: { code } });
+  const invitation = await prisma.invitation.findUnique({
+    where: { code },
+    include: { _count: { select: { redemptions: true } } },
+  });
   if (!invitation) throw new ValidationError('Invalid invite code');
-  if (invitation.usedBy) throw new ValidationError('Invite code has already been used');
+  if (invitation.maxUses !== null && invitation._count.redemptions >= invitation.maxUses) {
+    throw new ValidationError('Invite code has already been used');
+  }
   if (invitation.expiresAt && invitation.expiresAt < new Date()) {
     throw new ValidationError('Invite code has expired');
   }
@@ -77,12 +82,18 @@ export async function signup(input: {
   const passwordHash = await bcrypt.hash(input.password, BCRYPT_ROUNDS);
 
   const user = await prisma.$transaction(async (tx) => {
+    // Re-check the cap inside the transaction to shrink (not eliminate) the
+    // race window where two signups redeem a nearly-exhausted shared code
+    // at the same instant — acceptable for a 50-friend pick'em pool.
+    const currentUses = await tx.invitationRedemption.count({ where: { invitationId: invitation.id } });
+    if (invitation.maxUses !== null && currentUses >= invitation.maxUses) {
+      throw new ValidationError('Invite code has already been used');
+    }
     const newUser = await tx.user.create({
       data: { email: input.email, name: input.name, passwordHash },
     });
-    await tx.invitation.update({
-      where: { code: input.inviteCode },
-      data: { usedBy: newUser.id, usedAt: new Date() },
+    await tx.invitationRedemption.create({
+      data: { invitationId: invitation.id, userId: newUser.id },
     });
     if (invitation.seasonId) {
       await tx.seasonMembership.create({
@@ -148,12 +159,15 @@ export async function googleAuth(input: {
       const invitation = await validateInviteCode(input.inviteCode);
 
       user = await prisma.$transaction(async (tx) => {
+        const currentUses = await tx.invitationRedemption.count({ where: { invitationId: invitation.id } });
+        if (invitation.maxUses !== null && currentUses >= invitation.maxUses) {
+          throw new ValidationError('Invite code has already been used');
+        }
         const newUser = await tx.user.create({
           data: { email, name, googleId },
         });
-        await tx.invitation.update({
-          where: { code: input.inviteCode! },
-          data: { usedBy: newUser.id, usedAt: new Date() },
+        await tx.invitationRedemption.create({
+          data: { invitationId: invitation.id, userId: newUser.id },
         });
         if (invitation.seasonId) {
           await tx.seasonMembership.create({

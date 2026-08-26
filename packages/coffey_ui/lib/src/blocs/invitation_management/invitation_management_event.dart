@@ -12,6 +12,7 @@ class InvitationManagementEvent with _$InvitationManagementEvent {
     String? email,
     int? count,
     DateTime? expiresAt,
+    @Default(1) int? maxUses,
   }) = InvitationManagementCodeGenerateRequested;
 
   const factory InvitationManagementEvent.poolCreated({

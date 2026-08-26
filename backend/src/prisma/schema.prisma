@@ -58,12 +58,12 @@ model User {
   fcmTokens         String[] @default([])
   createdAt         DateTime @default(now())
 
-  invitationsCreated Invitation[]   @relation("CreatedBy")
-  invitationsUsed    Invitation[]   @relation("UsedBy")
-  picks              Pick[]
-  weeklyResults      WeeklyResult[]
-  seasonStandings    SeasonStanding[]
-  seasonMemberships  SeasonMembership[]
+  invitationsCreated  Invitation[]           @relation("CreatedBy")
+  invitationRedemptions InvitationRedemption[]
+  picks               Pick[]
+  weeklyResults       WeeklyResult[]
+  seasonStandings     SeasonStanding[]
+  seasonMemberships   SeasonMembership[]
 }
 
 model Invitation {
@@ -72,14 +72,29 @@ model Invitation {
   seasonId  String?
   email     String?   // targeted invite; null = anyone with the code
   createdBy String
-  usedBy    String?   // not unique — a user redeems a distinct code per pool they join
-  usedAt    DateTime?
+  maxUses   Int?      // null = unlimited; a targeted (email-set) invite is always 1
   expiresAt DateTime?
   createdAt DateTime  @default(now())
 
-  season  Season? @relation(fields: [seasonId], references: [id])
-  creator User    @relation("CreatedBy", fields: [createdBy], references: [id])
-  user    User?   @relation("UsedBy", fields: [usedBy], references: [id])
+  season      Season?                @relation(fields: [seasonId], references: [id])
+  creator     User                   @relation("CreatedBy", fields: [createdBy], references: [id])
+  redemptions InvitationRedemption[]
+}
+
+// One row per user who has redeemed a given invite code — lets a single
+// shared code (maxUses > 1) be used by many people, while still keeping a
+// per-person redemption record (who, when) and preventing the same user
+// from redeeming the same code twice.
+model InvitationRedemption {
+  id           String   @id @default(uuid())
+  invitationId String
+  userId       String
+  redeemedAt   DateTime @default(now())
+
+  invitation Invitation @relation(fields: [invitationId], references: [id])
+  user       User       @relation(fields: [userId], references: [id])
+
+  @@unique([invitationId, userId])
 }
 
 model Season {

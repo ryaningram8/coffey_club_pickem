@@ -166,68 +166,116 @@ class _InvitationManagementView extends StatelessWidget {
     final bloc = context.read<InvitationManagementBloc>();
     final emailController = TextEditingController();
     final countController = TextEditingController(text: '1');
+    final maxUsesController = TextEditingController();
 
     showDialog<void>(
       context: context,
       builder: (dialogContext) {
-        bool targeted = false;
+        var mode = _InviteMode.individual;
+        bool unlimited = true;
         DateTime? expiresAt;
         return StatefulBuilder(
           builder: (dialogContext, setState) {
             return AlertDialog(
               title: const Text('Generate Invite'),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  SwitchListTile(
-                    contentPadding: EdgeInsets.zero,
-                    title: const Text('Target a specific email'),
-                    value: targeted,
-                    onChanged: (value) => setState(() => targeted = value),
-                  ),
-                  if (targeted)
-                    TextField(
-                      controller: emailController,
-                      keyboardType: TextInputType.emailAddress,
-                      decoration: const InputDecoration(labelText: 'Email'),
-                    )
-                  else
-                    TextField(
-                      controller: countController,
-                      keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(
-                        labelText: 'How many codes',
-                        helperText: 'Up to 25 anonymous codes',
-                      ),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    SegmentedButton<_InviteMode>(
+                      segments: const [
+                        ButtonSegment(
+                          value: _InviteMode.individual,
+                          label: Text('Individual'),
+                        ),
+                        ButtonSegment(
+                          value: _InviteMode.shared,
+                          label: Text('Shared'),
+                        ),
+                        ButtonSegment(
+                          value: _InviteMode.email,
+                          label: Text('By email'),
+                        ),
+                      ],
+                      selected: {mode},
+                      onSelectionChanged: (selection) =>
+                          setState(() => mode = selection.first),
                     ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          expiresAt == null
-                              ? 'No expiry'
-                              : 'Expires: ${_formatDate(expiresAt!)}',
+                    const SizedBox(height: 12),
+                    switch (mode) {
+                      _InviteMode.email => TextField(
+                        controller: emailController,
+                        keyboardType: TextInputType.emailAddress,
+                        decoration: const InputDecoration(
+                          labelText: 'Email',
+                          helperText: 'One code, only redeemable by this address',
                         ),
                       ),
-                      TextButton(
-                        onPressed: () async {
-                          final picked = await showDatePicker(
-                            context: dialogContext,
-                            initialDate: DateTime.now(),
-                            firstDate: DateTime.now(),
-                            lastDate: DateTime.now().add(
-                              const Duration(days: 365),
-                            ),
-                          );
-                          if (picked != null)
-                            setState(() => expiresAt = picked);
-                        },
-                        child: const Text('Pick Date'),
+                      _InviteMode.individual => TextField(
+                        controller: countController,
+                        keyboardType: TextInputType.number,
+                        decoration: const InputDecoration(
+                          labelText: 'How many codes',
+                          helperText:
+                              'Up to 25 separate one-person codes',
+                        ),
                       ),
-                    ],
-                  ),
-                ],
+                      _InviteMode.shared => Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'One code — send it to everyone at once and '
+                            'each person redeems it themselves.',
+                          ),
+                          SwitchListTile(
+                            contentPadding: EdgeInsets.zero,
+                            title: const Text('Unlimited uses'),
+                            value: unlimited,
+                            onChanged: (value) =>
+                                setState(() => unlimited = value),
+                          ),
+                          if (!unlimited)
+                            TextField(
+                              controller: maxUsesController,
+                              keyboardType: TextInputType.number,
+                              decoration: const InputDecoration(
+                                labelText: 'Max redemptions',
+                                helperText: 'e.g. your pool size',
+                              ),
+                            ),
+                        ],
+                      ),
+                    },
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            expiresAt == null
+                                ? 'No expiry'
+                                : 'Expires: ${_formatDate(expiresAt!)}',
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: () async {
+                            final picked = await showDatePicker(
+                              context: dialogContext,
+                              initialDate: DateTime.now(),
+                              firstDate: DateTime.now(),
+                              lastDate: DateTime.now().add(
+                                const Duration(days: 365),
+                              ),
+                            );
+                            if (picked != null)
+                              setState(() => expiresAt = picked);
+                          },
+                          child: const Text('Pick Date'),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
               actions: [
                 TextButton(
@@ -236,13 +284,26 @@ class _InvitationManagementView extends StatelessWidget {
                 ),
                 FilledButton(
                   onPressed: () {
-                    if (targeted && !emailController.text.contains('@')) return;
-                    final count = int.tryParse(countController.text) ?? 1;
+                    if (mode == _InviteMode.email &&
+                        !emailController.text.contains('@')) {
+                      return;
+                    }
+                    final count = mode == _InviteMode.individual
+                        ? int.tryParse(countController.text) ?? 1
+                        : null;
+                    final maxUses = switch (mode) {
+                      _InviteMode.email || _InviteMode.individual => 1,
+                      _InviteMode.shared =>
+                        unlimited ? null : int.tryParse(maxUsesController.text) ?? 1,
+                    };
                     bloc.add(
                       InvitationManagementEvent.codeGenerateRequested(
-                        email: targeted ? emailController.text.trim() : null,
-                        count: targeted ? null : count,
+                        email: mode == _InviteMode.email
+                            ? emailController.text.trim()
+                            : null,
+                        count: count,
                         expiresAt: expiresAt,
+                        maxUses: maxUses,
                       ),
                     );
                     Navigator.of(dialogContext).pop();
@@ -327,9 +388,13 @@ class _InvitationTile extends StatelessWidget {
       invitation.expiresAt != null &&
       invitation.expiresAt!.isBefore(DateTime.now());
 
+  bool get _isExhausted =>
+      invitation.maxUses != null && invitation.useCount >= invitation.maxUses!;
+
+  bool get _isShared => invitation.maxUses != 1;
+
   @override
   Widget build(BuildContext context) {
-    final usedBy = invitation.usedBy;
     return ListTile(
       leading: const Icon(Icons.confirmation_number_outlined),
       title: Text(
@@ -337,8 +402,11 @@ class _InvitationTile extends StatelessWidget {
         style: const TextStyle(fontWeight: FontWeight.bold),
       ),
       subtitle: Text(_subtitle()),
-      trailing: usedBy != null
-          ? const _StatusChip(label: 'Redeemed')
+      onTap: invitation.redeemedBy.isEmpty
+          ? null
+          : () => _showRedeemedByDialog(context),
+      trailing: _isExhausted
+          ? const _StatusChip(label: 'Fully used')
           : _isExpired
           ? const _StatusChip(label: 'Expired')
           : Row(
@@ -361,9 +429,14 @@ class _InvitationTile extends StatelessWidget {
   }
 
   String _subtitle() {
-    final usedBy = invitation.usedBy;
-    if (usedBy != null) {
-      return 'Redeemed by ${usedBy.name}';
+    if (invitation.useCount > 0) {
+      if (!_isShared) {
+        return 'Redeemed by ${invitation.redeemedBy.first.name}';
+      }
+      final cap = invitation.maxUses;
+      return cap == null
+          ? '${invitation.useCount} used · unlimited'
+          : '${invitation.useCount}/$cap used';
     }
     if (_isExpired) {
       return 'Expired ${_formatShortDate(invitation.expiresAt!)}';
@@ -371,7 +444,42 @@ class _InvitationTile extends StatelessWidget {
     if (invitation.email != null) {
       return 'Reserved for ${invitation.email} · Unused';
     }
+    if (_isShared) {
+      final cap = invitation.maxUses;
+      return cap == null ? 'Shared code · unlimited uses' : 'Shared code · up to $cap uses';
+    }
     return 'Unused';
+  }
+
+  void _showRedeemedByDialog(BuildContext context) {
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text('Redeemed by (${invitation.redeemedBy.length})'),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: ListView.builder(
+            shrinkWrap: true,
+            itemCount: invitation.redeemedBy.length,
+            itemBuilder: (context, index) {
+              final redeemer = invitation.redeemedBy[index];
+              return ListTile(
+                dense: true,
+                title: Text(redeemer.name),
+                subtitle: Text(redeemer.email),
+                trailing: Text(_formatShortDate(redeemer.redeemedAt)),
+              );
+            },
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _copyCode(BuildContext context) async {
@@ -413,3 +521,5 @@ String _formatShortDate(DateTime dateTime) {
   final d = dateTime.toLocal();
   return '${d.month}/${d.day}/${d.year}';
 }
+
+enum _InviteMode { individual, shared, email }

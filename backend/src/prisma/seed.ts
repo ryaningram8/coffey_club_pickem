@@ -36,7 +36,8 @@ async function main() {
 
   console.log(`Season: ${season.name}`);
 
-  // Create a sample invite code
+  // Create a sample invite code — unlimited-use, so it doubles as a demo of
+  // the "one code, whole pool" shared-invite flow.
   await prisma.invitation.upsert({
     where: { code: 'COFFEY2025' },
     update: {},
@@ -44,10 +45,11 @@ async function main() {
       code: 'COFFEY2025',
       seasonId: season.id,
       createdBy: admin.id,
+      maxUses: null,
     },
   });
 
-  console.log('Sample invite code: COFFEY2025');
+  console.log('Sample invite code: COFFEY2025 (unlimited uses)');
   console.log('Seeding complete.');
 }
 

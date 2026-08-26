@@ -181,13 +181,13 @@ Three environments, each with a different purpose — don't skip straight to the
 
 1. **Local** (this dev machine) — fast iteration, no containers for `api`/Flutter. Run `docker compose up postgres redis` for just the database/queue backend, then `npm run dev` (backend) and `flutter run` (Flutter) directly. This is where most day-to-day development happens.
 2. **Dev VM** (Proxmox, `https://coffeyclub-dev.saloosa.dev`) — the full containerized stack (`postgres`, `redis`, `api`, `nginx`), real TLS, near-production shape. "Works locally" does not mean "works containerized" — a Prisma/Alpine OpenSSL mismatch and a missing `curl` in the production image both only surfaced here, never locally.
-3. **Production** — not yet provisioned. Until it exists, `main` and "what's deployed on the dev VM" are the same thing.
+3. **Production** (Proxmox, `https://coffeyclub.saloosa.dev`) — the full containerized stack, publicly reachable (pfSense port-forward + Let's Encrypt cert). Separate box from the dev VM; deploying to one does not deploy to the other.
 
 Process for a new feature:
 - Branch off `main`: `feature/<name>`.
 - Develop and test locally (environment 1) — this is the fast loop, use it for most changes.
 - Before merging, deploy the branch to the dev VM (environment 2) if the change touches anything deployment-shaped: a new Prisma migration, `Dockerfile`/`docker-compose.yml`/`nginx` config, environment variables, or anything you just want to see running for real. Pure UI/logic changes can often skip straight to merge if locally verified.
-- Merge to `main`, then redeploy: `git pull` + `docker compose up --build -d` (+ `prisma migrate deploy` if the migration hasn't been applied there yet) on whichever box is the deploy target — today that's always the dev VM; once production exists, deploying to dev and deploying to prod become separate, deliberate actions that don't have to happen together.
+- Merge to `main`, then redeploy: `git pull` + `docker compose up --build -d` (+ `prisma migrate deploy` if the migration hasn't been applied there yet) on whichever box is the deploy target. Deploying to dev and deploying to prod are separate, deliberate actions — pushing to the dev VM does not touch production.
 
 Once production holds real user data (not disposable seed data), migrations need more care than they do today: take a backup first, and prefer backward-compatible migrations (additive changes, avoid destructive column drops/renames in the same migration as code that depends on the old shape) so a mid-rollout state doesn't break. See the Postgres backup item in `TODO.md` — that needs to exist before this matters for real.
 

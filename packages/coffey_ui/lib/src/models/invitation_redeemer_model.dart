@@ -9,6 +9,7 @@ abstract class InvitationRedeemerModel with _$InvitationRedeemerModel {
     required String id,
     required String name,
     required String email,
+    required DateTime redeemedAt,
   }) = _InvitationRedeemerModel;
 
   factory InvitationRedeemerModel.fromJson(Map<String, dynamic> json) =>

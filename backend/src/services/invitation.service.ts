@@ -9,6 +9,13 @@ const CODE_LENGTH = 8;
 const MAX_BATCH_SIZE = 25;
 const MAX_GENERATE_ATTEMPTS = 5;
 
+export interface InvitationRedeemerDto {
+  id: string;
+  name: string;
+  email: string;
+  redeemedAt: string;
+}
+
 export interface InvitationDto {
   id: string;
   code: string;
@@ -17,8 +24,9 @@ export interface InvitationDto {
   email: string | null;
   expiresAt: string | null;
   createdAt: string;
-  usedAt: string | null;
-  usedBy: { id: string; name: string; email: string } | null;
+  maxUses: number | null;
+  useCount: number;
+  redeemedBy: InvitationRedeemerDto[];
 }
 
 function generateCode(): string {
@@ -36,9 +44,9 @@ function toInvitationDto(invitation: {
   email: string | null;
   expiresAt: Date | null;
   createdAt: Date;
-  usedAt: Date | null;
+  maxUses: number | null;
   season: { name: string } | null;
-  user: { id: string; name: string; email: string } | null;
+  redemptions: { redeemedAt: Date; user: { id: string; name: string; email: string } }[];
 }): InvitationDto {
   if (!invitation.seasonId || !invitation.season) {
     // Every invite minted through this service always carries a season;
@@ -53,21 +61,35 @@ function toInvitationDto(invitation: {
     email: invitation.email,
     expiresAt: invitation.expiresAt?.toISOString() ?? null,
     createdAt: invitation.createdAt.toISOString(),
-    usedAt: invitation.usedAt?.toISOString() ?? null,
-    usedBy: invitation.user,
+    maxUses: invitation.maxUses,
+    useCount: invitation.redemptions.length,
+    redeemedBy: invitation.redemptions.map((r) => ({
+      id: r.user.id,
+      name: r.user.name,
+      email: r.user.email,
+      redeemedAt: r.redeemedAt.toISOString(),
+    })),
   };
 }
 
 const invitationInclude = {
   season: { select: { name: true } },
-  user: { select: { id: true, name: true, email: true } },
+  redemptions: {
+    include: { user: { select: { id: true, name: true, email: true } } },
+    orderBy: { redeemedAt: 'asc' },
+  },
 } as const;
 
 /**
- * Mints one or more single-use invite codes for a season/pool. `count`
- * generates an anonymous batch (e.g. handing a few friends their own code
- * each); `email` targets a single code at one address instead. Codes are
- * retried on the rare random collision against the unique `code` column.
+ * Mints one or more invite codes for a season/pool. `count` generates an
+ * anonymous batch (e.g. handing a few friends their own code each); `email`
+ * targets a single code at one address instead (always single-use — a
+ * targeted invite only ever makes sense for the one person it names).
+ * `maxUses` controls how many different people can redeem an anonymous
+ * code — omit (or pass 1) for the traditional one-person code, a higher
+ * number (or `null` for unlimited) for one shared code handed to a whole
+ * group at once. Codes are retried on the rare random collision against
+ * the unique `code` column.
  */
 export async function createInvitations(input: {
   seasonId: string;
@@ -75,6 +97,7 @@ export async function createInvitations(input: {
   email?: string;
   expiresAt?: Date;
   count?: number;
+  maxUses?: number | null;
 }): Promise<InvitationDto[]> {
   const season = await prisma.season.findUnique({ where: { id: input.seasonId } });
   if (!season) throw new NotFoundError('Season');
@@ -86,6 +109,15 @@ export async function createInvitations(input: {
   if (count < 1 || count > MAX_BATCH_SIZE) {
     throw new ValidationError(`count must be between 1 and ${MAX_BATCH_SIZE}`);
   }
+  if (input.maxUses !== undefined && input.maxUses !== null && input.maxUses < 1) {
+    throw new ValidationError('maxUses must be at least 1');
+  }
+  if (input.email && input.maxUses !== undefined && input.maxUses !== 1) {
+    throw new ValidationError('A code targeted at an email must be single-use');
+  }
+  // `??` would treat an explicit `null` (unlimited) the same as "omitted"
+  // (default 1), so this checks `undefined` specifically instead.
+  const maxUses = input.email ? 1 : input.maxUses === undefined ? 1 : input.maxUses;
 
   const created: InvitationDto[] = [];
   for (let i = 0; i < count; i++) {
@@ -100,6 +132,7 @@ export async function createInvitations(input: {
             email: input.email ?? null,
             expiresAt: input.expiresAt ?? null,
             createdBy: input.createdBy,
+            maxUses,
           },
           include: invitationInclude,
         });
@@ -128,15 +161,25 @@ export async function listInvitations(seasonId?: string): Promise<InvitationDto[
 /**
  * Lets an already-authenticated user join an additional pool via an invite
  * code, without creating a new account — the path for someone who joined a
- * preseason test pool to later join the main season once it opens.
+ * preseason test pool to later join the main season once it opens. Also
+ * the path a second (third, fourth, ...) person takes to redeem a shared
+ * (maxUses > 1) code someone else already used.
  */
 export async function redeemInvitation(
   code: string,
   userId: string,
 ): Promise<{ seasonId: string; seasonName: string }> {
-  const invitation = await prisma.invitation.findUnique({ where: { code } });
+  const invitation = await prisma.invitation.findUnique({
+    where: { code },
+    include: { redemptions: true },
+  });
   if (!invitation) throw new ValidationError('Invalid invite code');
-  if (invitation.usedBy) throw new ValidationError('Invite code has already been used');
+  if (invitation.redemptions.some((r) => r.userId === userId)) {
+    throw new ValidationError('You have already used this invite code');
+  }
+  if (invitation.maxUses !== null && invitation.redemptions.length >= invitation.maxUses) {
+    throw new ValidationError('Invite code has already been used');
+  }
   if (invitation.expiresAt && invitation.expiresAt < new Date()) {
     throw new ValidationError('Invite code has expired');
   }
@@ -154,9 +197,15 @@ export async function redeemInvitation(
   if (existingMembership) throw new ConflictError('You are already a member of this pool');
 
   const season = await prisma.$transaction(async (tx) => {
-    await tx.invitation.update({
-      where: { code },
-      data: { usedBy: userId, usedAt: new Date() },
+    // Re-check the cap inside the transaction to shrink (not eliminate) the
+    // race window where two people redeem a nearly-exhausted shared code at
+    // the same instant — acceptable for a 50-friend pick'em pool.
+    const currentUses = await tx.invitationRedemption.count({ where: { invitationId: invitation.id } });
+    if (invitation.maxUses !== null && currentUses >= invitation.maxUses) {
+      throw new ValidationError('Invite code has already been used');
+    }
+    await tx.invitationRedemption.create({
+      data: { invitationId: invitation.id, userId },
     });
     await tx.seasonMembership.create({
       data: { userId, seasonId: invitation.seasonId! },

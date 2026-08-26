@@ -86,6 +86,7 @@ class InvitationManagementBloc
         email: event.email,
         count: event.count,
         expiresAt: event.expiresAt,
+        maxUses: event.maxUses,
       );
       final invitations = await _invitationRepository.getInvitations(
         current.selectedSeasonId,

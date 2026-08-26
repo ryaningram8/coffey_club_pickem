@@ -17,11 +17,17 @@ class InvitationRepository with ApiErrorMapper {
   Future<InvitationRedemptionModel> redeemInvitation(String code) =>
       guard(() => _api.redeemInvitation(code));
 
+  /// `maxUses`: how many different people may redeem the code — defaults to
+  /// 1 (a traditional one-person code). Pass a higher number, or `null` for
+  /// unlimited, to mint one shared code a whole group can all redeem.
+  /// Always sent explicitly (even when `null`) since `null` is a meaningful
+  /// "unlimited" value here, not an absent one.
   Future<List<InvitationModel>> createInvitations({
     required String seasonId,
     String? email,
     DateTime? expiresAt,
     int? count,
+    int? maxUses = 1,
   }) {
     return guard(
       () => _api.createInvitations({
@@ -29,6 +35,7 @@ class InvitationRepository with ApiErrorMapper {
         'email': ?email,
         'expiresAt': ?expiresAt?.toUtc().toIso8601String(),
         'count': ?count,
+        'maxUses': maxUses,
       }),
     );
   }
