@@ -63,7 +63,9 @@ class _CommissionerWeekScreenState extends State<CommissionerWeekScreen> {
           if (snapshot.hasError || !snapshot.hasData) {
             return ErrorStateView(
               message: 'Could not load this week.',
-              onRetry: () => setState(() => _weekFuture = _load()),
+              onRetry: () => setState(() {
+                _weekFuture = _load();
+              }),
             );
           }
           final week = snapshot.data!;
@@ -79,6 +81,35 @@ class _CommissionerWeekScreenState extends State<CommissionerWeekScreen> {
                 Text(
                   'Status: ${week.status.replaceAll('_', ' ')} · '
                   'Deadline: ${_formatDate(week.pickDeadline)}',
+                ),
+                const SizedBox(height: 16),
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Pick Deadline',
+                                style: Theme.of(context).textTheme.titleSmall,
+                              ),
+                              const SizedBox(height: 4),
+                              Text(_formatDate(week.pickDeadline)),
+                            ],
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.edit_outlined),
+                          tooltip: 'Edit deadline',
+                          onPressed: () => _editDeadline(context, week),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
                 const SizedBox(height: 16),
                 Card(
@@ -196,6 +227,110 @@ class _CommissionerWeekScreenState extends State<CommissionerWeekScreen> {
     );
   }
 
+  Future<void> _editDeadline(BuildContext context, WeekModel week) async {
+    final weekRepository = context.read<WeekRepository>();
+    final messenger = ScaffoldMessenger.of(context);
+    final currentLocal = week.pickDeadline.toLocal();
+    final firstDate = DateTime.now().subtract(const Duration(days: 365));
+
+    DateTime? deadlineDate = DateTime(
+      currentLocal.year,
+      currentLocal.month,
+      currentLocal.day,
+    );
+    TimeOfDay? deadlineTime = TimeOfDay(
+      hour: currentLocal.hour,
+      minute: currentLocal.minute,
+    );
+
+    final result = await showDialog<DateTime>(
+      context: context,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (dialogContext, setState) {
+            final deadline = (deadlineDate != null && deadlineTime != null)
+                ? DateTime(
+                    deadlineDate!.year,
+                    deadlineDate!.month,
+                    deadlineDate!.day,
+                    deadlineTime!.hour,
+                    deadlineTime!.minute,
+                  )
+                : null;
+            return AlertDialog(
+              title: const Text('Pick Deadline'),
+              content: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Expanded(
+                    child: Text(
+                      deadline == null
+                          ? 'No deadline selected'
+                          : _formatDate(deadline),
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: () async {
+                      final picked = await showDatePicker(
+                        context: dialogContext,
+                        initialDate: deadlineDate ?? DateTime.now(),
+                        firstDate: firstDate,
+                        lastDate: DateTime.now().add(const Duration(days: 365)),
+                      );
+                      if (picked != null) {
+                        setState(() => deadlineDate = picked);
+                      }
+                    },
+                    child: const Text('Pick Date'),
+                  ),
+                  TextButton(
+                    onPressed: () async {
+                      final picked = await showTimePicker(
+                        context: dialogContext,
+                        initialTime:
+                            deadlineTime ??
+                            const TimeOfDay(hour: 23, minute: 59),
+                      );
+                      if (picked != null) {
+                        setState(() => deadlineTime = picked);
+                      }
+                    },
+                    child: const Text('Pick Time'),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(),
+                  child: const Text('Cancel'),
+                ),
+                FilledButton(
+                  onPressed: deadline == null
+                      ? null
+                      : () => Navigator.of(dialogContext).pop(deadline),
+                  child: const Text('Save'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+    if (result == null) return;
+
+    try {
+      await weekRepository.updateWeek(widget.weekId, pickDeadline: result);
+      if (!mounted) return;
+      setState(() {
+        _weekFuture = weekRepository.getWeek(widget.weekId);
+      });
+    } catch (e) {
+      messenger.showSnackBar(
+        SnackBar(content: Text('Could not save deadline: $e')),
+      );
+    }
+  }
+
   Future<void> _editMessage(BuildContext context, WeekModel week) async {
     final controller = TextEditingController(
       text: week.commissionerMessage ?? '',
@@ -236,7 +371,9 @@ class _CommissionerWeekScreenState extends State<CommissionerWeekScreen> {
         text.trim().isEmpty ? null : text.trim(),
       );
       if (!mounted) return;
-      setState(() => _weekFuture = weekRepository.getWeek(widget.weekId));
+      setState(() {
+        _weekFuture = weekRepository.getWeek(widget.weekId);
+      });
     } catch (e) {
       messenger.showSnackBar(
         SnackBar(content: Text('Could not save message: $e')),
@@ -285,7 +422,9 @@ class _CommissionerWeekScreenState extends State<CommissionerWeekScreen> {
     try {
       await weekRepository.updatePot(widget.weekId, pot);
       if (!mounted) return;
-      setState(() => _weekFuture = weekRepository.getWeek(widget.weekId));
+      setState(() {
+        _weekFuture = weekRepository.getWeek(widget.weekId);
+      });
     } catch (e) {
       messenger.showSnackBar(SnackBar(content: Text('Could not save pot: $e')));
     }
