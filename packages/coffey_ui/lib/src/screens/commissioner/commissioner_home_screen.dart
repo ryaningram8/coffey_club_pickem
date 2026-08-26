@@ -123,9 +123,19 @@ class _CommissionerHomeView extends StatelessWidget {
     showDialog<void>(
       context: context,
       builder: (dialogContext) {
-        DateTime? deadline;
+        DateTime? deadlineDate;
+        TimeOfDay? deadlineTime;
         return StatefulBuilder(
           builder: (dialogContext, setState) {
+            final deadline = (deadlineDate != null && deadlineTime != null)
+                ? DateTime(
+                    deadlineDate!.year,
+                    deadlineDate!.month,
+                    deadlineDate!.day,
+                    deadlineTime!.hour,
+                    deadlineTime!.minute,
+                  )
+                : null;
             return AlertDialog(
               title: const Text('Create Week'),
               content: Column(
@@ -149,22 +159,38 @@ class _CommissionerHomeView extends StatelessWidget {
                         child: Text(
                           deadline == null
                               ? 'No deadline selected'
-                              : 'Deadline: ${_formatDate(deadline!)}',
+                              : 'Deadline: ${_formatDate(deadline)}',
                         ),
                       ),
                       TextButton(
                         onPressed: () async {
                           final picked = await showDatePicker(
                             context: dialogContext,
-                            initialDate: DateTime.now(),
+                            initialDate: deadlineDate ?? DateTime.now(),
                             firstDate: DateTime.now(),
                             lastDate: DateTime.now().add(
                               const Duration(days: 365),
                             ),
                           );
-                          if (picked != null) setState(() => deadline = picked);
+                          if (picked != null) {
+                            setState(() => deadlineDate = picked);
+                          }
                         },
                         child: const Text('Pick Date'),
+                      ),
+                      TextButton(
+                        onPressed: () async {
+                          final picked = await showTimePicker(
+                            context: dialogContext,
+                            initialTime:
+                                deadlineTime ??
+                                const TimeOfDay(hour: 23, minute: 59),
+                          );
+                          if (picked != null) {
+                            setState(() => deadlineTime = picked);
+                          }
+                        },
+                        child: const Text('Pick Time'),
                       ),
                     ],
                   ),
@@ -187,7 +213,7 @@ class _CommissionerHomeView extends StatelessWidget {
                       CommissionerEvent.weekCreateRequested(
                         weekNumber: weekNumber,
                         label: labelController.text.trim(),
-                        pickDeadline: deadline!,
+                        pickDeadline: deadline,
                       ),
                     );
                     Navigator.of(dialogContext).pop();
