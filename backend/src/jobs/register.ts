@@ -47,15 +47,13 @@ export function registerJobs(): void {
     logger.error({ err, jobId: job?.id }, 'score-sync job failed');
   });
 
+  // TESTING: every 5 min every day. Revert to hourly weekdays / 5-min
+  // weekends (two upserts, 'score-sync-weekday' + 'score-sync-weekend')
+  // once done. upsertJobScheduler keyed by a stable id so re-registering on
+  // every dev-server restart replaces the existing schedule instead of
+  // piling up duplicate schedulers in Redis.
   scoreSyncQueue
-    .add(
-      'sync',
-      {},
-      {
-        repeat: { pattern: '*/5 * * * 6,0' }, // every 5 min Sat & Sun
-        jobId: 'score-sync-scheduled',
-      },
-    )
+    .upsertJobScheduler('score-sync-scheduled', { pattern: '*/5 * * * *' }, { name: 'sync' })
     .catch((err) => {
       logger.error({ err }, 'Failed to schedule score-sync job');
     });
