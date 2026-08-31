@@ -21,6 +21,7 @@ export interface AvailableGameDto {
   venueName: string | null;
   venueCity: string | null;
   venueCountry: string | null;
+  network: string | null;
 }
 
 function normalize(name: string): string {
@@ -92,6 +93,7 @@ async function getAvailableForSport(
       venueName: game.venueName,
       venueCity: game.venueCity,
       venueCountry: game.venueCountry,
+      network: game.network,
     };
   });
 }

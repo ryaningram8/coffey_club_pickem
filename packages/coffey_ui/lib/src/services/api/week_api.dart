@@ -17,6 +17,9 @@ abstract class WeekApi {
   @PUT('/weeks/{id}')
   Future<WeekModel> updateWeek(@Path('id') String id, @Body() Map<String, dynamic> body);
 
+  @DELETE('/weeks/{id}')
+  Future<void> deleteWeek(@Path('id') String id);
+
   @POST('/weeks/{id}/games')
   Future<WeekModel> assignGames(@Path('id') String id, @Body() Map<String, dynamic> body);
 }

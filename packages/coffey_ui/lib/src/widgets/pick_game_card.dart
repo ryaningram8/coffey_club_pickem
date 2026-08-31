@@ -21,7 +21,8 @@ class PickGameCard extends StatelessWidget {
     final time = game.gameTime.toLocal();
     final timeLabel =
         '${_weekday(time.weekday)} '
-        '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
+        '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}'
+        '${game.network != null ? ' · ${game.network}' : ''}';
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),

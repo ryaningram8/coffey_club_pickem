@@ -185,6 +185,7 @@ model Game {
   venueName    String?
   venueCity    String?
   venueCountry String?
+  network      String? // TV broadcast network (e.g. "ESPN", "ABC") — from ESPN's scoreboard feed at assignment time; not backfilled for already-assigned games
   createdAt    DateTime   @default(now())
 
   week       Week  @relation(fields: [weekId], references: [id])

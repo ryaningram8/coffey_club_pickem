@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+import 'package:dio/dio.dart';
 import '../models/api_exception.dart';
 import '../models/available_game_model.dart';
 import '../models/week_model.dart';
@@ -6,9 +8,12 @@ import '../services/api_client.dart';
 import 'api_error_mapper.dart';
 
 class WeekRepository with ApiErrorMapper {
-  WeekRepository({required ApiClient apiClient}) : _api = WeekApi(apiClient.dio);
+  WeekRepository({required ApiClient apiClient})
+      : _api = WeekApi(apiClient.dio),
+        _dio = apiClient.dio;
 
   final WeekApi _api;
+  final Dio _dio;
 
   /// Null when there's no active or upcoming week in this pool (off-season
   /// empty state) — the backend 404s in that case, which we translate to
@@ -53,6 +58,8 @@ class WeekRepository with ApiErrorMapper {
     return guard(() => _api.updateWeek(weekId, {'pot': pot}));
   }
 
+  Future<void> deleteWeek(String weekId) => guard(() => _api.deleteWeek(weekId));
+
   Future<WeekModel> assignGames(String weekId, List<AvailableGameModel> games) {
     Map<String, dynamic> team(AvailableTeamModel t) => {
           'espnId': t.espnId,
@@ -79,5 +86,18 @@ class WeekRepository with ApiErrorMapper {
         )
         .toList();
     return guard(() => _api.assignGames(weekId, {'games': payload}));
+  }
+
+  /// Raw call rather than a Retrofit method — no binary response exists
+  /// anywhere else in this app's API layer, and a plain Dio call is a
+  /// smaller addition than teaching Retrofit a non-JSON response type here.
+  Future<Uint8List> downloadPickSheetPdf(String weekId) {
+    return guard(() async {
+      final response = await _dio.get<List<int>>(
+        '/weeks/$weekId/pick-sheet.pdf',
+        options: Options(responseType: ResponseType.bytes),
+      );
+      return Uint8List.fromList(response.data!);
+    });
   }
 }

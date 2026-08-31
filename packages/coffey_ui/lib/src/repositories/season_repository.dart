@@ -1,4 +1,5 @@
 import '../models/api_exception.dart';
+import '../models/roster_member_model.dart';
 import '../models/season_model.dart';
 import '../models/week_summary_model.dart';
 import '../services/api/season_api.dart';
@@ -31,6 +32,11 @@ class SeasonRepository with ApiErrorMapper {
 
   Future<List<WeekSummaryModel>> getWeeks(String seasonId) =>
       guard(() => _api.getWeeks(seasonId));
+
+  /// A season's roster (name/email/role per member) — used by the
+  /// commissioner "enter picks for player" player picker.
+  Future<List<RosterMemberModel>> getMembers(String seasonId) =>
+      guard(() => _api.getMembers(seasonId));
 
   Future<SeasonModel> createSeason({
     required String name,

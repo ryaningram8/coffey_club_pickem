@@ -36,6 +36,7 @@ const assignGamesBody = z.object({
         venueName: z.string().nullable().optional(),
         venueCity: z.string().nullable().optional(),
         venueCountry: z.string().nullable().optional(),
+        network: z.string().nullable().optional(),
       }),
     )
     .min(1),
@@ -74,6 +75,20 @@ export async function weekRoutes(server: FastifyInstance) {
         ...body,
         pickDeadline: body.pickDeadline ? new Date(body.pickDeadline) : undefined,
       });
+    },
+  );
+
+  server.delete(
+    '/:id',
+    {
+      preHandler: requirePoolCommissioner(async (request) =>
+        weekService.getSeasonIdForWeek((request.params as { id: string }).id),
+      ),
+    },
+    async (request, reply) => {
+      const { id } = idParams.parse(request.params);
+      await weekService.deleteWeek(id);
+      return reply.code(204).send();
     },
   );
 

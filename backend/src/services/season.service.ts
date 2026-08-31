@@ -102,6 +102,36 @@ export async function getActiveSeason(userId: string): Promise<SeasonDto> {
   throw new NotFoundError('Active season');
 }
 
+export interface SeasonMemberDto {
+  userId: string;
+  name: string;
+  email: string;
+  role: PoolRole;
+}
+
+/**
+ * A season's roster (name/email/role per member) — used by the commissioner
+ * "enter picks for player" flow to pick a target player. Unlike
+ * `GET /admin/users`, this is scoped to one season and reachable by that
+ * season's commissioner, not just a global admin.
+ */
+export async function getSeasonMembers(seasonId: string): Promise<SeasonMemberDto[]> {
+  const season = await prisma.season.findUnique({ where: { id: seasonId } });
+  if (!season) throw new NotFoundError('Season');
+
+  const memberships = await prisma.seasonMembership.findMany({
+    where: { seasonId },
+    include: { user: { select: { id: true, name: true, email: true } } },
+    orderBy: { user: { name: 'asc' } },
+  });
+  return memberships.map((m) => ({
+    userId: m.user.id,
+    name: m.user.name,
+    email: m.user.email,
+    role: m.role,
+  }));
+}
+
 export async function listWeeks(seasonId: string): Promise<WeekSummaryDto[]> {
   const season = await prisma.season.findUnique({ where: { id: seasonId } });
   if (!season) throw new NotFoundError('Season');

@@ -19,6 +19,7 @@ class LiveGameCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       child: Padding(
@@ -28,7 +29,19 @@ class LiveGameCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                _StatusChip(status: game.status),
+                if (game.status == 'scheduled')
+                  Text(_timeLabel(game.gameTime), style: theme.textTheme.labelMedium)
+                else
+                  _StatusChip(status: game.status),
+                if (game.network != null) ...[
+                  const SizedBox(width: 8),
+                  Text(
+                    game.network!,
+                    style: theme.textTheme.labelMedium?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
                 const Spacer(),
                 if (myPickedTeamId != null)
                   PickCorrectnessIcon(isCorrect: myPickIsCorrect),
@@ -53,6 +66,13 @@ class LiveGameCard extends StatelessWidget {
       ),
     );
   }
+}
+
+String _timeLabel(DateTime gameTime) {
+  final time = gameTime.toLocal();
+  const weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  return '${weekdays[time.weekday - 1]} '
+      '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
 }
 
 class _StatusChip extends StatelessWidget {

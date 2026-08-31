@@ -35,6 +35,7 @@ export interface EspnGame {
   venueName: string | null;
   venueCity: string | null;
   venueCountry: string | null;
+  network: string | null;
 }
 
 interface EspnScoreboardResponse {
@@ -68,6 +69,7 @@ interface EspnScoreboardResponse {
           country?: string;
         };
       };
+      broadcasts?: Array<{ names?: string[] }>;
     }>;
   }>;
 }
@@ -163,6 +165,7 @@ export async function getScoreboard(
       venueName: competition?.venue?.fullName ?? null,
       venueCity,
       venueCountry: address?.country ?? null,
+      network: competition?.broadcasts?.[0]?.names?.[0] ?? null,
     });
   }
   return games;

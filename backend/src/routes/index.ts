@@ -5,6 +5,7 @@ import { seasonRoutes } from './season.routes';
 import { weekRoutes } from './week.routes';
 import { gameRoutes } from './game.routes';
 import { pickRoutes } from './pick.routes';
+import { pickSheetRoutes } from './pick-sheet.routes';
 import { weekStandingsRoutes, seasonStandingsRoutes } from './standings.routes';
 import { adminRoutes } from './admin.routes';
 import { adminUsersRoutes } from './admin-users.routes';
@@ -21,6 +22,7 @@ export async function registerRoutes(server: FastifyInstance) {
   await server.register(weekRoutes, { prefix: '/weeks' });
   await server.register(gameRoutes, { prefix: '/games' });
   await server.register(pickRoutes, { prefix: '/weeks' });
+  await server.register(pickSheetRoutes, { prefix: '/weeks' });
   await server.register(weekStandingsRoutes, { prefix: '/weeks' });
   await server.register(seasonStandingsRoutes, { prefix: '/seasons' });
   await server.register(adminRoutes, { prefix: '/admin' });

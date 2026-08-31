@@ -91,10 +91,14 @@ class _CommissionerHomeView extends StatelessWidget {
                             '${week.gameCount} games · deadline ${_formatDate(week.pickDeadline)}',
                           ),
                           trailing: _StatusBadge(status: week.status),
-                          onTap: () => context.pushNamed(
-                            'commissionerWeek',
-                            pathParameters: {'weekId': week.id},
-                          ),
+                          onTap: () async {
+                            final bloc = context.read<CommissionerBloc>();
+                            await context.pushNamed(
+                              'commissionerWeek',
+                              pathParameters: {'weekId': week.id},
+                            );
+                            bloc.add(CommissionerEvent.started(season: season));
+                          },
                         );
                       }, childCount: weeks.length),
                     ),

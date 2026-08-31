@@ -13,4 +13,14 @@ abstract class PickApi {
 
   @POST('/weeks/{id}/picks')
   Future<List<PickModel>> submitPicks(@Path('id') String id, @Body() Map<String, dynamic> body);
+
+  @GET('/weeks/{id}/players/{userId}/picks')
+  Future<List<PickModel>> getPicksForPlayer(@Path('id') String id, @Path('userId') String userId);
+
+  @PUT('/weeks/{id}/players/{userId}/picks')
+  Future<List<PickModel>> submitPicksForPlayer(
+    @Path('id') String id,
+    @Path('userId') String userId,
+    @Body() Map<String, dynamic> body,
+  );
 }

@@ -41,6 +41,13 @@ dependencies:
   # Typography
   google_fonts: ^6.2.1
 
+  # File save/share (paper pick sheet PDF download) — share_plus for the
+  # native share sheet on mobile; web triggers a browser download directly
+  # via package:web instead of going through share_plus's web plugin (its
+  # web platform registration wasn't taking effect in this environment).
+  share_plus: ^11.0.0
+  web: ^1.1.0
+
   # Firebase (push notifications)
   firebase_core: ^3.1.0
   firebase_messaging: ^15.0.0

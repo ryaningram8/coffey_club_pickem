@@ -32,6 +32,7 @@ export interface GameDto {
   venueName: string | null;
   venueCity: string | null;
   venueCountry: string | null;
+  network: string | null;
 }
 
 export interface WeekDto {
@@ -77,6 +78,7 @@ export interface AssignGameInput {
   venueName?: string | null;
   venueCity?: string | null;
   venueCountry?: string | null;
+  network?: string | null;
 }
 
 type GameWithTeams = Game & { homeTeam: Team; awayTeam: Team };
@@ -114,6 +116,7 @@ function toGameDto(game: GameWithTeams): GameDto {
     venueName: game.venueName,
     venueCity: game.venueCity,
     venueCountry: game.venueCountry,
+    network: game.network,
   };
 }
 
@@ -184,6 +187,23 @@ export async function updateWeek(
     include: gamesInclude,
   });
   return toWeekDto(week);
+}
+
+/**
+ * Hard-deletes a week and everything scoped to it (picks, weekly results,
+ * games) in one transaction — there's no soft-delete convention in this
+ * schema, and none of those child rows are meaningful without their week.
+ */
+export async function deleteWeek(weekId: string): Promise<void> {
+  const existing = await prisma.week.findUnique({ where: { id: weekId } });
+  if (!existing) throw new NotFoundError('Week');
+
+  await prisma.$transaction([
+    prisma.pick.deleteMany({ where: { weekId } }),
+    prisma.weeklyResult.deleteMany({ where: { weekId } }),
+    prisma.game.deleteMany({ where: { weekId } }),
+    prisma.week.delete({ where: { id: weekId } }),
+  ]);
 }
 
 export async function getWeekWithGames(weekId: string): Promise<WeekDto> {
@@ -302,6 +322,7 @@ export async function assignGames(weekId: string, games: AssignGameInput[]): Pro
           venueName: game.venueName ?? null,
           venueCity: game.venueCity ?? null,
           venueCountry: game.venueCountry ?? null,
+          network: game.network ?? null,
         },
         create: {
           weekId,
@@ -317,6 +338,7 @@ export async function assignGames(weekId: string, games: AssignGameInput[]): Pro
           venueName: game.venueName ?? null,
           venueCity: game.venueCity ?? null,
           venueCountry: game.venueCountry ?? null,
+          network: game.network ?? null,
         },
       });
     }

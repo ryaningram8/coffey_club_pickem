@@ -3,8 +3,11 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../models/week_model.dart';
 import '../../repositories/week_repository.dart';
+import '../../services/pick_sheet_download.dart';
 import '../../widgets/error_state_view.dart';
 import '../../widgets/responsive_content.dart';
+
+enum _WeekMenuAction { payouts, downloadPickSheet, enterPicks, delete }
 
 /// Read-only detail view of a single week's published games — a simple
 /// fetch-and-display screen, so it uses a plain FutureBuilder rather than a
@@ -36,13 +39,55 @@ class _CommissionerWeekScreenState extends State<CommissionerWeekScreen> {
       appBar: AppBar(
         title: const Text('Week Detail'),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.payments_outlined),
-            tooltip: 'Payouts',
-            onPressed: () => context.pushNamed(
-              'commissionerPayouts',
-              pathParameters: {'weekId': widget.weekId},
-            ),
+          PopupMenuButton<_WeekMenuAction>(
+            onSelected: (action) {
+              switch (action) {
+                case _WeekMenuAction.payouts:
+                  context.pushNamed(
+                    'commissionerPayouts',
+                    pathParameters: {'weekId': widget.weekId},
+                  );
+                case _WeekMenuAction.downloadPickSheet:
+                  _downloadPickSheet(context);
+                case _WeekMenuAction.enterPicks:
+                  context.pushNamed(
+                    'commissionerEnterPicks',
+                    pathParameters: {'weekId': widget.weekId},
+                  );
+                case _WeekMenuAction.delete:
+                  _deleteWeek(context);
+              }
+            },
+            itemBuilder: (context) => const [
+              PopupMenuItem(
+                value: _WeekMenuAction.payouts,
+                child: ListTile(
+                  leading: Icon(Icons.payments_outlined),
+                  title: Text('Payouts'),
+                ),
+              ),
+              PopupMenuItem(
+                value: _WeekMenuAction.downloadPickSheet,
+                child: ListTile(
+                  leading: Icon(Icons.picture_as_pdf_outlined),
+                  title: Text('Download Pick Sheet'),
+                ),
+              ),
+              PopupMenuItem(
+                value: _WeekMenuAction.enterPicks,
+                child: ListTile(
+                  leading: Icon(Icons.edit_note_outlined),
+                  title: Text('Enter Picks for Player'),
+                ),
+              ),
+              PopupMenuItem(
+                value: _WeekMenuAction.delete,
+                child: ListTile(
+                  leading: Icon(Icons.delete_outline),
+                  title: Text('Delete Week'),
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -508,6 +553,69 @@ class _CommissionerWeekScreenState extends State<CommissionerWeekScreen> {
       });
     } catch (e) {
       messenger.showSnackBar(SnackBar(content: Text('Could not save pot: $e')));
+    }
+  }
+
+  Future<void> _deleteWeek(BuildContext context) async {
+    final weekRepository = context.read<WeekRepository>();
+    final messenger = ScaffoldMessenger.of(context);
+
+    WeekModel? week;
+    try {
+      week = await _weekFuture;
+    } catch (_) {
+      // Dialog still confirms without a label if the initial load failed.
+    }
+    if (!context.mounted) return;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Delete Week'),
+        content: Text(
+          'This permanently deletes ${week?.label ?? 'this week'}, including '
+          "all of its games, picks, and results. This can't be undone.",
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(dialogContext).colorScheme.error,
+              foregroundColor: Theme.of(dialogContext).colorScheme.onError,
+            ),
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    try {
+      await weekRepository.deleteWeek(widget.weekId);
+      if (!context.mounted) return;
+      context.pop(true);
+    } catch (e) {
+      messenger.showSnackBar(
+        SnackBar(content: Text('Could not delete week: $e')),
+      );
+    }
+  }
+
+  Future<void> _downloadPickSheet(BuildContext context) async {
+    final weekRepository = context.read<WeekRepository>();
+    final messenger = ScaffoldMessenger.of(context);
+
+    try {
+      final bytes = await weekRepository.downloadPickSheetPdf(widget.weekId);
+      await savePickSheetPdf(bytes, 'pick-sheet-${widget.weekId}.pdf');
+    } catch (e) {
+      messenger.showSnackBar(
+        SnackBar(content: Text('Could not download pick sheet: $e')),
+      );
     }
   }
 

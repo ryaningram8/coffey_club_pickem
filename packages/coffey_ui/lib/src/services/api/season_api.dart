@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:retrofit/retrofit.dart';
+import '../../models/roster_member_model.dart';
 import '../../models/season_model.dart';
 import '../../models/week_summary_model.dart';
 
@@ -23,6 +24,9 @@ abstract class SeasonApi {
 
   @GET('/seasons/{id}/weeks')
   Future<List<WeekSummaryModel>> getWeeks(@Path('id') String id);
+
+  @GET('/seasons/{id}/members')
+  Future<List<RosterMemberModel>> getMembers(@Path('id') String id);
 
   @POST('/seasons')
   Future<SeasonModel> createSeason(@Body() Map<String, dynamic> body);

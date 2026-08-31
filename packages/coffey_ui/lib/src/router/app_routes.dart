@@ -20,6 +20,8 @@ class AppRoutes {
   static const String commissioner = '/commissioner';
   static const String commissionerWeek = '/commissioner/week/:weekId';
   static const String commissionerGames = '/commissioner/week/:weekId/games';
+  static const String commissionerEnterPicks =
+      '/commissioner/week/:weekId/enter-picks';
   static const String commissionerInvites = '/commissioner/invites';
   static const String commissionerPayouts = '/commissioner/payouts/:weekId';
 

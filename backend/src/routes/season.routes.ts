@@ -55,6 +55,15 @@ export async function seasonRoutes(server: FastifyInstance) {
     return seasonService.listWeeks(id);
   });
 
+  server.get(
+    '/:id/members',
+    { preHandler: requirePoolCommissioner(async (request) => (request.params as { id: string }).id) },
+    async (request) => {
+      const { id } = idParams.parse(request.params);
+      return seasonService.getSeasonMembers(id);
+    },
+  );
+
   server.post('/', { preHandler: requireAdmin() }, async (request, reply) => {
     const body = createSeasonBody.parse(request.body);
     const season = await seasonService.createSeason(body);

@@ -7,6 +7,7 @@ import '../screens/auth/login_screen.dart';
 import '../screens/auth/signup_screen.dart';
 import '../screens/commissioner/commissioner_home_screen.dart';
 import '../screens/commissioner/commissioner_week_screen.dart';
+import '../screens/commissioner/enter_picks_screen.dart';
 import '../screens/commissioner/game_browser_screen.dart';
 import '../screens/commissioner/invite_management_screen.dart';
 import '../screens/commissioner/payouts_screen.dart';
@@ -104,6 +105,13 @@ class AppRouter {
           path: AppRoutes.commissionerGames,
           name: 'commissionerGames',
           builder: (context, state) => GameBrowserScreen(
+            weekId: state.pathParameters['weekId']!,
+          ),
+        ),
+        GoRoute(
+          path: AppRoutes.commissionerEnterPicks,
+          name: 'commissionerEnterPicks',
+          builder: (context, state) => EnterPicksScreen(
             weekId: state.pathParameters['weekId']!,
           ),
         ),
