@@ -46,12 +46,40 @@ class PickGameCard extends StatelessWidget {
                   ),
               ],
             ),
+            if (game.isNeutralSite ||
+                game.venueName != null ||
+                game.venueCity != null) ...[
+              const SizedBox(height: 4),
+              Row(
+                children: [
+                  Icon(
+                    Icons.location_on_outlined,
+                    size: 14,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: Text(
+                      [
+                        if (game.isNeutralSite) 'Neutral Site',
+                        if (game.venueName != null) game.venueName!,
+                        if (game.venueCity != null) game.venueCity!,
+                        if (game.venueCountry != null) game.venueCountry!,
+                      ].join(' · '),
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
             const SizedBox(height: 8),
             Row(
               children: [
                 Expanded(
                   child: _TeamButton(
-                    label: game.awayTeam.abbreviation,
+                    label: game.awayTeam.name,
                     selected: selectedTeamId == game.awayTeam.id,
                     onTap: () => onTeamSelected(game.awayTeam.id),
                   ),
@@ -62,7 +90,7 @@ class PickGameCard extends StatelessWidget {
                 ),
                 Expanded(
                   child: _TeamButton(
-                    label: game.homeTeam.abbreviation,
+                    label: game.homeTeam.name,
                     selected: selectedTeamId == game.homeTeam.id,
                     onTap: () => onTeamSelected(game.homeTeam.id),
                   ),
@@ -106,9 +134,15 @@ class _TeamButton extends StatelessWidget {
               : theme.colorScheme.outline,
           width: selected ? 2 : 1,
         ),
-        padding: const EdgeInsets.symmetric(vertical: 14),
+        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 4),
       ),
-      child: Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
+      child: Text(
+        label,
+        textAlign: TextAlign.center,
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+        style: const TextStyle(fontWeight: FontWeight.bold),
+      ),
     );
   }
 }

@@ -20,6 +20,10 @@ abstract class GameModel with _$GameModel {
     String? spread,
     String? overUnder,
     required int displayOrder,
+    @Default(false) bool isNeutralSite,
+    String? venueName,
+    String? venueCity,
+    String? venueCountry,
   }) = _GameModel;
 
   factory GameModel.fromJson(Map<String, dynamic> json) => _$GameModelFromJson(json);

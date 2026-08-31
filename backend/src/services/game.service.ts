@@ -17,6 +17,10 @@ export interface AvailableGameDto {
   awayTeam: AvailableTeamDto;
   spread: number | null;
   overUnder: number | null;
+  isNeutralSite: boolean;
+  venueName: string | null;
+  venueCity: string | null;
+  venueCountry: string | null;
 }
 
 function normalize(name: string): string {
@@ -84,6 +88,10 @@ async function getAvailableForSport(
       },
       spread: match?.spread ?? null,
       overUnder: match?.overUnder ?? null,
+      isNeutralSite: game.isNeutralSite,
+      venueName: game.venueName,
+      venueCity: game.venueCity,
+      venueCountry: game.venueCountry,
     };
   });
 }

@@ -47,10 +47,7 @@ class _CommissionerWeekScreenState extends State<CommissionerWeekScreen> {
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => context.pushNamed(
-          'commissionerGames',
-          pathParameters: {'weekId': widget.weekId},
-        ),
+        onPressed: () => _editGames(context),
         icon: const Icon(Icons.edit_calendar_outlined),
         label: const Text('Edit Games'),
       ),
@@ -79,8 +76,37 @@ class _CommissionerWeekScreenState extends State<CommissionerWeekScreen> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Status: ${week.status.replaceAll('_', ' ')} · '
+                  'Status: ${_statusLabel(week.status)} · '
                   'Deadline: ${_formatDate(week.pickDeadline)}',
+                ),
+                const SizedBox(height: 16),
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Week Status',
+                                style: Theme.of(context).textTheme.titleSmall,
+                              ),
+                              const SizedBox(height: 4),
+                              Text(_statusLabel(week.status)),
+                            ],
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.edit_outlined),
+                          tooltip: 'Edit status',
+                          onPressed: () => _editStatus(context, week),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
                 const SizedBox(height: 16),
                 Card(
@@ -202,9 +228,16 @@ class _CommissionerWeekScreenState extends State<CommissionerWeekScreen> {
                     (game) => Card(
                       child: ListTile(
                         title: Text(
-                          '${game.awayTeam.abbreviation} @ ${game.homeTeam.abbreviation}',
+                          '${game.awayTeam.name} @ ${game.homeTeam.name}',
                         ),
-                        subtitle: Text(_sportLabel(game.sport)),
+                        subtitle: Text(
+                          [
+                            _sportLabel(game.sport),
+                            if (game.isNeutralSite) 'Neutral Site',
+                            if (game.venueName != null) game.venueName!,
+                            if (game.venueCity != null) game.venueCity!,
+                          ].join(' · '),
+                        ),
                         trailing:
                             (game.spread != null || game.overUnder != null)
                             ? Text(
@@ -225,6 +258,54 @@ class _CommissionerWeekScreenState extends State<CommissionerWeekScreen> {
         },
       ),
     );
+  }
+
+  Future<void> _editGames(BuildContext context) async {
+    await context.pushNamed(
+      'commissionerGames',
+      pathParameters: {'weekId': widget.weekId},
+    );
+    if (!mounted) return;
+    setState(() {
+      _weekFuture = _load();
+    });
+  }
+
+  Future<void> _editStatus(BuildContext context, WeekModel week) async {
+    final weekRepository = context.read<WeekRepository>();
+    final messenger = ScaffoldMessenger.of(context);
+
+    final status = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => SimpleDialog(
+        title: const Text('Week Status'),
+        children: [
+          for (final s in _weekStatuses)
+            ListTile(
+              leading: Icon(
+                s == week.status
+                    ? Icons.radio_button_checked
+                    : Icons.radio_button_unchecked,
+              ),
+              title: Text(_statusLabel(s)),
+              onTap: () => Navigator.of(dialogContext).pop(s),
+            ),
+        ],
+      ),
+    );
+    if (status == null || status == week.status) return;
+
+    try {
+      await weekRepository.updateWeek(widget.weekId, status: status);
+      if (!mounted) return;
+      setState(() {
+        _weekFuture = _load();
+      });
+    } catch (e) {
+      messenger.showSnackBar(
+        SnackBar(content: Text('Could not update status: $e')),
+      );
+    }
   }
 
   Future<void> _editDeadline(BuildContext context, WeekModel week) async {
@@ -436,6 +517,16 @@ class _CommissionerWeekScreenState extends State<CommissionerWeekScreen> {
         '${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}';
   }
 }
+
+const _weekStatuses = [
+  'upcoming',
+  'picks_open',
+  'locked',
+  'in_progress',
+  'completed',
+];
+
+String _statusLabel(String status) => status.replaceAll('_', ' ');
 
 String _sportLabel(String sport) {
   switch (sport) {

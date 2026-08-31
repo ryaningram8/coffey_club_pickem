@@ -71,6 +71,10 @@ class WeekRepository with ApiErrorMapper {
             'awayTeam': team(g.awayTeam),
             'spread': ?g.spread,
             'overUnder': ?g.overUnder,
+            'isNeutralSite': g.isNeutralSite,
+            'venueName': ?g.venueName,
+            'venueCity': ?g.venueCity,
+            'venueCountry': ?g.venueCountry,
           },
         )
         .toList();

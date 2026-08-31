@@ -181,6 +181,10 @@ model Game {
   overUnder    Decimal?   @db.Decimal(5, 1) // display only
   espnGameId   String? // scoped per week, NOT globally unique — the same real-world game can be independently selected into more than one pool's week at once
   displayOrder Int        @default(0)
+  isNeutralSite Boolean   @default(false)
+  venueName    String?
+  venueCity    String?
+  venueCountry String?
   createdAt    DateTime   @default(now())
 
   week       Week  @relation(fields: [weekId], references: [id])

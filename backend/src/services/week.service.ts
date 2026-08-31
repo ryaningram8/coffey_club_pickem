@@ -28,6 +28,10 @@ export interface GameDto {
   spread: string | null;
   overUnder: string | null;
   displayOrder: number;
+  isNeutralSite: boolean;
+  venueName: string | null;
+  venueCity: string | null;
+  venueCountry: string | null;
 }
 
 export interface WeekDto {
@@ -69,6 +73,10 @@ export interface AssignGameInput {
   awayTeam: AssignGameTeamInput;
   spread?: number | null;
   overUnder?: number | null;
+  isNeutralSite?: boolean;
+  venueName?: string | null;
+  venueCity?: string | null;
+  venueCountry?: string | null;
 }
 
 type GameWithTeams = Game & { homeTeam: Team; awayTeam: Team };
@@ -102,6 +110,10 @@ function toGameDto(game: GameWithTeams): GameDto {
     spread: game.spread?.toString() ?? null,
     overUnder: game.overUnder?.toString() ?? null,
     displayOrder: game.displayOrder,
+    isNeutralSite: game.isNeutralSite,
+    venueName: game.venueName,
+    venueCity: game.venueCity,
+    venueCountry: game.venueCountry,
   };
 }
 
@@ -286,6 +298,10 @@ export async function assignGames(weekId: string, games: AssignGameInput[]): Pro
           spread: game.spread ?? null,
           overUnder: game.overUnder ?? null,
           displayOrder: index,
+          isNeutralSite: game.isNeutralSite ?? false,
+          venueName: game.venueName ?? null,
+          venueCity: game.venueCity ?? null,
+          venueCountry: game.venueCountry ?? null,
         },
         create: {
           weekId,
@@ -297,6 +313,10 @@ export async function assignGames(weekId: string, games: AssignGameInput[]): Pro
           spread: game.spread ?? null,
           overUnder: game.overUnder ?? null,
           displayOrder: index,
+          isNeutralSite: game.isNeutralSite ?? false,
+          venueName: game.venueName ?? null,
+          venueCity: game.venueCity ?? null,
+          venueCountry: game.venueCountry ?? null,
         },
       });
     }
@@ -332,6 +352,10 @@ export async function updateGame(
     overUnder: number | null;
     status: GameStatus;
     displayOrder: number;
+    isNeutralSite: boolean;
+    venueName: string | null;
+    venueCity: string | null;
+    venueCountry: string | null;
   }>,
 ): Promise<GameDto> {
   const game = await getGameOrThrow(gameId);

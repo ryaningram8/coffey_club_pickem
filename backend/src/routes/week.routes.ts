@@ -32,6 +32,10 @@ const assignGamesBody = z.object({
         awayTeam: assignGameTeam,
         spread: z.number().nullable().optional(),
         overUnder: z.number().nullable().optional(),
+        isNeutralSite: z.boolean().optional(),
+        venueName: z.string().nullable().optional(),
+        venueCity: z.string().nullable().optional(),
+        venueCountry: z.string().nullable().optional(),
       }),
     )
     .min(1),

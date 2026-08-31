@@ -25,6 +25,10 @@ const updateGameBody = z.object({
   overUnder: z.number().nullable().optional(),
   status: z.enum(['scheduled', 'in_progress', 'final', 'postponed', 'cancelled']).optional(),
   displayOrder: z.number().int().optional(),
+  isNeutralSite: z.boolean().optional(),
+  venueName: z.string().nullable().optional(),
+  venueCity: z.string().nullable().optional(),
+  venueCountry: z.string().nullable().optional(),
 });
 
 export async function gameRoutes(server: FastifyInstance) {

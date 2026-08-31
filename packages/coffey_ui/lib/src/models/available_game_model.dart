@@ -29,6 +29,10 @@ abstract class AvailableGameModel with _$AvailableGameModel {
     required AvailableTeamModel awayTeam,
     double? spread,
     double? overUnder,
+    @Default(false) bool isNeutralSite,
+    String? venueName,
+    String? venueCity,
+    String? venueCountry,
   }) = _AvailableGameModel;
 
   factory AvailableGameModel.fromJson(Map<String, dynamic> json) =>

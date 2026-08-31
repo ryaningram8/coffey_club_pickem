@@ -31,6 +31,10 @@ export interface EspnGame {
   status: EspnGameStatus;
   homeScore: number | null;
   awayScore: number | null;
+  isNeutralSite: boolean;
+  venueName: string | null;
+  venueCity: string | null;
+  venueCountry: string | null;
 }
 
 interface EspnScoreboardResponse {
@@ -55,6 +59,15 @@ interface EspnScoreboardResponse {
           logos?: Array<{ href: string }>;
         };
       }>;
+      neutralSite?: boolean;
+      venue?: {
+        fullName?: string;
+        address?: {
+          city?: string;
+          state?: string;
+          country?: string;
+        };
+      };
     }>;
   }>;
 }
@@ -131,6 +144,13 @@ export async function getScoreboard(
     const away = competitors.find((c) => c.homeAway === 'away');
     if (!home || !away) continue;
 
+    const address = competition?.venue?.address;
+    const venueCity = address?.city
+      ? address.state
+        ? `${address.city}, ${address.state}`
+        : address.city
+      : null;
+
     games.push({
       espnGameId: event.id,
       gameTime: event.date,
@@ -139,6 +159,10 @@ export async function getScoreboard(
       status: toGameStatus(competition?.status?.type),
       homeScore: home.score != null ? Number(home.score) : null,
       awayScore: away.score != null ? Number(away.score) : null,
+      isNeutralSite: competition?.neutralSite ?? false,
+      venueName: competition?.venue?.fullName ?? null,
+      venueCity,
+      venueCountry: address?.country ?? null,
     });
   }
   return games;

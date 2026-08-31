@@ -36,14 +36,14 @@ class LiveGameCard extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             _TeamScoreRow(
-              label: game.awayTeam.abbreviation,
+              label: game.awayTeam.name,
               score: game.awayScore,
               isWinner: game.winnerTeamId == game.awayTeam.id,
               isMyPick: myPickedTeamId == game.awayTeam.id,
             ),
             const SizedBox(height: 4),
             _TeamScoreRow(
-              label: game.homeTeam.abbreviation,
+              label: game.homeTeam.name,
               score: game.homeScore,
               isWinner: game.winnerTeamId == game.homeTeam.id,
               isMyPick: myPickedTeamId == game.homeTeam.id,
@@ -101,6 +101,8 @@ class _TeamScoreRow extends StatelessWidget {
         Expanded(
           child: Text(
             label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: TextStyle(fontWeight: weight, fontSize: 16),
           ),
         ),
