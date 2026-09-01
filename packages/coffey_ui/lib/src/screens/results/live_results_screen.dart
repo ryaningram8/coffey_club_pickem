@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import '../../blocs/auth/auth_bloc.dart';
 import '../../blocs/live_results/live_results_bloc.dart';
 import '../../models/pick_summary_model.dart';
@@ -8,6 +9,7 @@ import '../../repositories/week_repository.dart';
 import '../../widgets/empty_state_view.dart';
 import '../../widgets/error_state_view.dart';
 import '../../widgets/live_game_card.dart';
+import '../../widgets/live_leaderboard.dart';
 import '../../widgets/responsive_content.dart';
 import '../../widgets/skeleton_loaders.dart';
 
@@ -29,15 +31,16 @@ class LiveResultsScreen extends StatelessWidget {
         standingsRepository: context.read<StandingsRepository>(),
         weekId: weekId,
       )..add(const LiveResultsEvent.started()),
-      child: _LiveResultsView(currentUserId: currentUserId),
+      child: _LiveResultsView(currentUserId: currentUserId, weekId: weekId),
     );
   }
 }
 
 class _LiveResultsView extends StatelessWidget {
-  const _LiveResultsView({required this.currentUserId});
+  const _LiveResultsView({required this.currentUserId, required this.weekId});
 
   final String currentUserId;
+  final String weekId;
 
   @override
   Widget build(BuildContext context) {
@@ -99,7 +102,13 @@ class _LiveResultsView extends StatelessWidget {
                             ),
                             if (leaderboard.isNotEmpty) ...[
                               const SizedBox(height: 16),
-                              _MiniLeaderboard(entries: leaderboard),
+                              _MiniLeaderboard(
+                                entries: leaderboard,
+                                onViewAll: () => context.pushNamed(
+                                  'liveStandings',
+                                  pathParameters: {'weekId': weekId},
+                                ),
+                              ),
                             ],
                           ],
                         ),
@@ -138,21 +147,10 @@ class _LiveResultsView extends StatelessWidget {
     return null;
   }
 
-  List<_LeaderboardEntry> _buildLeaderboard(
+  List<LiveLeaderboardEntry> _buildLeaderboard(
     List<PickSummaryEntryModel> entries,
   ) {
-    final rows =
-        entries
-            .map(
-              (e) => _LeaderboardEntry(
-                userName: e.userName,
-                correct: e.picks.where((p) => p.isCorrect == true).length,
-                total: e.picks.length,
-              ),
-            )
-            .toList()
-          ..sort((a, b) => b.correct.compareTo(a.correct));
-    return rows.take(5).toList();
+    return buildLiveLeaderboard(entries).take(5).toList();
   }
 
   static String _formatTime(DateTime dateTime) {
@@ -161,45 +159,36 @@ class _LiveResultsView extends StatelessWidget {
   }
 }
 
-class _LeaderboardEntry {
-  _LeaderboardEntry({
-    required this.userName,
-    required this.correct,
-    required this.total,
-  });
-  final String userName;
-  final int correct;
-  final int total;
-}
-
 class _MiniLeaderboard extends StatelessWidget {
-  const _MiniLeaderboard({required this.entries});
+  const _MiniLeaderboard({required this.entries, required this.onViewAll});
 
-  final List<_LeaderboardEntry> entries;
+  final List<LiveLeaderboardEntry> entries;
+  final VoidCallback onViewAll;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Top 5', style: theme.textTheme.titleMedium),
-            const SizedBox(height: 8),
-            for (var i = 0; i < entries.length; i++)
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 2),
-                child: Row(
-                  children: [
-                    SizedBox(width: 24, child: Text('${i + 1}.')),
-                    Expanded(child: Text(entries[i].userName)),
-                    Text('${entries[i].correct} / ${entries[i].total}'),
-                  ],
-                ),
+      child: InkWell(
+        onTap: onViewAll,
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Text('Top 5', style: theme.textTheme.titleMedium),
+                  const Spacer(),
+                  Text('View All', style: theme.textTheme.labelLarge),
+                  const Icon(Icons.chevron_right),
+                ],
               ),
-          ],
+              const SizedBox(height: 8),
+              for (var i = 0; i < entries.length; i++)
+                LiveLeaderboardRow(position: i + 1, entry: entries[i]),
+            ],
+          ),
         ),
       ),
     );

@@ -10,6 +10,7 @@ class AppRoutes {
   static const String home = '/';
   static const String pickSheet = '/week/:weekId';
   static const String liveResults = '/week/:weekId/results';
+  static const String liveStandings = '/week/:weekId/results/standings';
   static const String weeklyStandings = '/week/:weekId/standings';
   static const String seasonStandings = '/standings';
   static const String profile = '/profile';

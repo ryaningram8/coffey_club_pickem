@@ -14,6 +14,7 @@ import '../screens/commissioner/payouts_screen.dart';
 import '../screens/home/home_screen.dart';
 import '../screens/picks/pick_sheet_screen.dart';
 import '../screens/results/live_results_screen.dart';
+import '../screens/results/live_standings_screen.dart';
 import '../screens/settings/notification_prefs_screen.dart';
 import '../screens/settings/settings_screen.dart';
 import '../screens/standings/season_standings_screen.dart';
@@ -72,6 +73,13 @@ class AppRouter {
           path: AppRoutes.liveResults,
           name: 'liveResults',
           builder: (context, state) => LiveResultsScreen(
+            weekId: state.pathParameters['weekId']!,
+          ),
+        ),
+        GoRoute(
+          path: AppRoutes.liveStandings,
+          name: 'liveStandings',
+          builder: (context, state) => LiveStandingsScreen(
             weekId: state.pathParameters['weekId']!,
           ),
         ),
