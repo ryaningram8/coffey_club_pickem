@@ -31,6 +31,8 @@ const updateGameBody = z.object({
   venueCountry: z.string().nullable().optional(),
 });
 
+const tiebreakerBody = z.object({ isTiebreaker: z.boolean() });
+
 export async function gameRoutes(server: FastifyInstance) {
   server.get(
     '/available',
@@ -71,6 +73,20 @@ export async function gameRoutes(server: FastifyInstance) {
       const { id } = idParams.parse(request.params);
       await weekService.deleteGame(id);
       return reply.code(204).send();
+    },
+  );
+
+  server.patch(
+    '/:id/tiebreaker',
+    {
+      preHandler: requirePoolCommissioner(async (request) =>
+        weekService.getSeasonIdForGame((request.params as { id: string }).id),
+      ),
+    },
+    async (request) => {
+      const { id } = idParams.parse(request.params);
+      const { isTiebreaker } = tiebreakerBody.parse(request.body);
+      return weekService.setGameTiebreaker(id, isTiebreaker);
     },
   );
 }

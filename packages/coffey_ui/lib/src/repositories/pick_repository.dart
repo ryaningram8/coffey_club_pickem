@@ -13,7 +13,15 @@ class PickRepository with ApiErrorMapper {
   Future<List<PickModel>> submitPicks(String weekId, List<PickModel> picks) {
     return guard(
       () => _api.submitPicks(weekId, {
-        'picks': picks.map((p) => {'gameId': p.gameId, 'pickedTeamId': p.pickedTeamId}).toList(),
+        'picks': picks
+            .map(
+              (p) => {
+                'gameId': p.gameId,
+                'pickedTeamId': p.pickedTeamId,
+                if (p.tiebreakerGuess != null) 'tiebreakerGuess': p.tiebreakerGuess,
+              },
+            )
+            .toList(),
       }),
     );
   }
@@ -32,7 +40,15 @@ class PickRepository with ApiErrorMapper {
   ) {
     return guard(
       () => _api.submitPicksForPlayer(weekId, userId, {
-        'picks': picks.map((p) => {'gameId': p.gameId, 'pickedTeamId': p.pickedTeamId}).toList(),
+        'picks': picks
+            .map(
+              (p) => {
+                'gameId': p.gameId,
+                'pickedTeamId': p.pickedTeamId,
+                if (p.tiebreakerGuess != null) 'tiebreakerGuess': p.tiebreakerGuess,
+              },
+            )
+            .toList(),
       }),
     );
   }

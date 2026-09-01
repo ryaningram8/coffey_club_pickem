@@ -21,4 +21,7 @@ abstract class GameApi {
 
   @DELETE('/games/{id}')
   Future<void> deleteGame(@Path('id') String id);
+
+  @PATCH('/games/{id}/tiebreaker')
+  Future<GameModel> setTiebreaker(@Path('id') String id, @Body() Map<String, dynamic> body);
 }

@@ -25,6 +25,7 @@ abstract class GameModel with _$GameModel {
     String? venueCity,
     String? venueCountry,
     String? network,
+    @Default(false) bool isTiebreaker,
   }) = _GameModel;
 
   factory GameModel.fromJson(Map<String, dynamic> json) => _$GameModelFromJson(json);

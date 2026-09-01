@@ -45,4 +45,7 @@ class GameRepository with ApiErrorMapper {
   }
 
   Future<void> deleteGame(String id) => guard(() => _api.deleteGame(id));
+
+  Future<GameModel> setTiebreaker(String id, bool isTiebreaker) =>
+      guard(() => _api.setTiebreaker(id, {'isTiebreaker': isTiebreaker}));
 }

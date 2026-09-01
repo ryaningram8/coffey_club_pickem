@@ -13,6 +13,7 @@ const submitPicksBody = z.object({
       z.object({
         gameId: z.string().min(1),
         pickedTeamId: z.string().min(1),
+        tiebreakerGuess: z.number().int().nonnegative().nullable().optional(),
       }),
     )
     .min(1),

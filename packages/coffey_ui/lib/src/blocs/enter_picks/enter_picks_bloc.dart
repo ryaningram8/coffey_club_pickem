@@ -32,6 +32,7 @@ class EnterPicksBloc extends Bloc<EnterPicksEvent, EnterPicksState> {
     on<EnterPicksStarted>(_onStarted);
     on<EnterPicksPlayerSelected>(_onPlayerSelected);
     on<EnterPicksTeamSelected>(_onTeamSelected);
+    on<EnterPicksTiebreakerGuessChanged>(_onTiebreakerGuessChanged);
     on<EnterPicksSubmitRequested>(_onSubmitRequested);
     on<EnterPicksPlayerCreated>(_onPlayerCreated);
   }
@@ -71,6 +72,7 @@ class EnterPicksBloc extends Bloc<EnterPicksEvent, EnterPicksState> {
       current.copyWith(
         selectedPlayerId: event.userId,
         selections: const {},
+        tiebreakerGuesses: const {},
         justSubmitted: false,
         errorMessage: null,
       ),
@@ -85,7 +87,16 @@ class EnterPicksBloc extends Bloc<EnterPicksEvent, EnterPicksState> {
       // by the time this resolves — only apply it if still relevant.
       if (latest is EnterPicksLoaded && latest.selectedPlayerId == event.userId) {
         final selections = {for (final p in picks) p.gameId: p.pickedTeamId};
-        emit(latest.copyWith(selections: selections));
+        final tiebreakerGuesses = {
+          for (final p in picks)
+            if (p.tiebreakerGuess != null) p.gameId: p.tiebreakerGuess!,
+        };
+        emit(
+          latest.copyWith(
+            selections: selections,
+            tiebreakerGuesses: tiebreakerGuesses,
+          ),
+        );
       }
     } catch (e) {
       final latest = state;
@@ -106,6 +117,21 @@ class EnterPicksBloc extends Bloc<EnterPicksEvent, EnterPicksState> {
     emit(current.copyWith(selections: updated, justSubmitted: false));
   }
 
+  void _onTiebreakerGuessChanged(
+    EnterPicksTiebreakerGuessChanged event,
+    Emitter<EnterPicksState> emit,
+  ) {
+    final current = state;
+    if (current is! EnterPicksLoaded) return;
+    final updated = Map<String, int>.from(current.tiebreakerGuesses);
+    if (event.guess == null) {
+      updated.remove(event.gameId);
+    } else {
+      updated[event.gameId] = event.guess!;
+    }
+    emit(current.copyWith(tiebreakerGuesses: updated, justSubmitted: false));
+  }
+
   Future<void> _onSubmitRequested(
     EnterPicksSubmitRequested event,
     Emitter<EnterPicksState> emit,
@@ -118,7 +144,13 @@ class EnterPicksBloc extends Bloc<EnterPicksEvent, EnterPicksState> {
     emit(current.copyWith(isSubmitting: true, errorMessage: null));
     try {
       final picks = current.selections.entries
-          .map((e) => PickModel(gameId: e.key, pickedTeamId: e.value))
+          .map(
+            (e) => PickModel(
+              gameId: e.key,
+              pickedTeamId: e.value,
+              tiebreakerGuess: current.tiebreakerGuesses[e.key],
+            ),
+          )
           .toList();
       await _pickRepository.submitPicksForPlayer(_weekId, playerId, picks);
       emit(current.copyWith(isSubmitting: false, justSubmitted: true));
@@ -149,6 +181,7 @@ class EnterPicksBloc extends Bloc<EnterPicksEvent, EnterPicksState> {
           roster: roster,
           selectedPlayerId: member.userId,
           selections: const {},
+          tiebreakerGuesses: const {},
         ),
       );
     } catch (e) {

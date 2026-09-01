@@ -10,6 +10,7 @@ import '../../widgets/error_state_view.dart';
 import '../../widgets/pick_correctness_icon.dart';
 import '../../widgets/responsive_content.dart';
 import '../../widgets/skeleton_loaders.dart';
+import '../../widgets/tiebreaker_group_breakdown.dart';
 
 class WeeklyStandingsScreen extends StatelessWidget {
   const WeeklyStandingsScreen({super.key, required this.weekId});
@@ -112,8 +113,18 @@ class _WeeklyStandingsView extends StatelessWidget {
                             WeeklyStandingsEvent.playerToggled(standing.userId),
                           ),
                         ),
-                        if (isExpanded)
+                        if (isExpanded) ...[
                           _PickBreakdown(picks: picks, gamesById: gamesById),
+                          if (isTied && state.tiebreaker.games.isNotEmpty)
+                            TiebreakerGroupBreakdown(
+                              tiebreaker: state.tiebreaker,
+                              tiedUserIds: state.standings
+                                  .where((s) => s.rank == standing.rank)
+                                  .map((s) => s.userId)
+                                  .toSet(),
+                              highlightUserId: standing.userId,
+                            ),
+                        ],
                       ],
                     ),
                   );
@@ -200,3 +211,4 @@ class _PickBreakdown extends StatelessWidget {
     );
   }
 }
+

@@ -187,6 +187,7 @@ model Game {
   venueCity    String?
   venueCountry String?
   network      String? // TV broadcast network (e.g. "ESPN", "ABC") — from ESPN's scoreboard feed at assignment time; not backfilled for already-assigned games
+  isTiebreaker Boolean   @default(false) // at most 2 per week, enforced in service layer
   createdAt    DateTime   @default(now())
 
   week       Week  @relation(fields: [weekId], references: [id])
@@ -205,6 +206,7 @@ model Pick {
   weekId       String
   pickedTeamId String
   isCorrect    Boolean? // null until game finalizes
+  tiebreakerGuess Int?  // only set when game.isTiebreaker is true; player's guess for combined final score
   submittedAt  DateTime @default(now())
 
   user       User @relation(fields: [userId], references: [id])

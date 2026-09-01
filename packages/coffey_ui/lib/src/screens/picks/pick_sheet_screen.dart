@@ -68,7 +68,13 @@ class _PickSheetView extends StatelessWidget {
           if (state is PicksLoaded) {
             final games = state.week.games;
             final pickedCount = state.selections.length;
-            final isComplete = games.isNotEmpty && pickedCount == games.length;
+            final tiebreakerGamesComplete = games
+                .where((g) => g.isTiebreaker)
+                .every((g) => state.tiebreakerGuesses.containsKey(g.id));
+            final isComplete =
+                games.isNotEmpty &&
+                pickedCount == games.length &&
+                tiebreakerGamesComplete;
             final deadlinePassed = state.week.pickDeadline.isBefore(
               DateTime.now(),
             );
@@ -94,7 +100,12 @@ class _PickSheetView extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 12),
                   child: Align(
                     alignment: Alignment.centerLeft,
-                    child: Text('$pickedCount / ${games.length} picks made'),
+                    child: Text(
+                      pickedCount == games.length && !tiebreakerGamesComplete
+                          ? '$pickedCount / ${games.length} picks made · '
+                                "don't forget your tiebreaker guess"
+                          : '$pickedCount / ${games.length} picks made',
+                    ),
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -117,6 +128,16 @@ class _PickSheetView extends StatelessWidget {
                                       PicksEvent.teamSelected(
                                         gameId: game.id,
                                         teamId: teamId,
+                                      ),
+                                    ),
+                              tiebreakerGuess:
+                                  state.tiebreakerGuesses[game.id],
+                              onTiebreakerGuessChanged: deadlinePassed
+                                  ? null
+                                  : (guess) => context.read<PicksBloc>().add(
+                                      PicksEvent.tiebreakerGuessChanged(
+                                        gameId: game.id,
+                                        guess: guess,
                                       ),
                                     ),
                             );

@@ -32,6 +32,19 @@ export async function weekStandingsRoutes(server: FastifyInstance) {
       return resultsService.getPicksSummary(id);
     },
   );
+
+  server.get(
+    '/:id/tiebreaker',
+    {
+      preHandler: requirePoolMember(async (request) =>
+        weekService.getSeasonIdForWeek((request.params as { id: string }).id),
+      ),
+    },
+    async (request) => {
+      const { id } = idParams.parse(request.params);
+      return resultsService.getWeekTiebreaker(id);
+    },
+  );
 }
 
 export async function seasonStandingsRoutes(server: FastifyInstance) {

@@ -33,6 +33,7 @@ export interface GameDto {
   venueCity: string | null;
   venueCountry: string | null;
   network: string | null;
+  isTiebreaker: boolean;
 }
 
 export interface WeekDto {
@@ -117,6 +118,7 @@ function toGameDto(game: GameWithTeams): GameDto {
     venueCity: game.venueCity,
     venueCountry: game.venueCountry,
     network: game.network,
+    isTiebreaker: game.isTiebreaker,
   };
 }
 
@@ -395,4 +397,44 @@ export async function deleteGame(gameId: string): Promise<void> {
   const game = await getGameOrThrow(gameId);
   assertBeforeDeadline(game.week);
   await prisma.game.delete({ where: { id: gameId } });
+}
+
+const MAX_TIEBREAKER_GAMES = 2;
+
+/**
+ * Designates (or un-designates) a game as one of the week's tiebreaker
+ * games. Locked once any pick has been submitted for the week — not just
+ * past the deadline — since a player may have already entered a
+ * tiebreaker guess (or skipped one) based on the current designation, and
+ * swapping it out afterward would orphan that guess.
+ */
+export async function setGameTiebreaker(gameId: string, isTiebreaker: boolean): Promise<GameDto> {
+  const game = await getGameOrThrow(gameId);
+  assertBeforeDeadline(game.week);
+
+  if (game.isTiebreaker === isTiebreaker) {
+    return toGameDto(await prisma.game.findUniqueOrThrow({
+      where: { id: gameId },
+      include: { homeTeam: true, awayTeam: true },
+    }));
+  }
+
+  const pickCount = await prisma.pick.count({ where: { weekId: game.weekId } });
+  if (pickCount > 0) {
+    throw new ValidationError('Tiebreaker games cannot be changed once picks have been submitted for this week');
+  }
+
+  if (isTiebreaker) {
+    const currentCount = await prisma.game.count({ where: { weekId: game.weekId, isTiebreaker: true } });
+    if (currentCount >= MAX_TIEBREAKER_GAMES) {
+      throw new ValidationError(`A week can have at most ${MAX_TIEBREAKER_GAMES} tiebreaker games`);
+    }
+  }
+
+  const updated = await prisma.game.update({
+    where: { id: gameId },
+    data: { isTiebreaker },
+    include: { homeTeam: true, awayTeam: true },
+  });
+  return toGameDto(updated);
 }

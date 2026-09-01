@@ -7,5 +7,9 @@ class PicksEvent with _$PicksEvent {
     required String gameId,
     required String teamId,
   }) = PicksTeamSelected;
+  const factory PicksEvent.tiebreakerGuessChanged({
+    required String gameId,
+    int? guess,
+  }) = PicksTiebreakerGuessChanged;
   const factory PicksEvent.submitRequested() = PicksSubmitRequested;
 }

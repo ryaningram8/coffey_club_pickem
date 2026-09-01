@@ -208,6 +208,15 @@ class _EnterPicksViewState extends State<_EnterPicksView> {
                                             teamId: teamId,
                                           ),
                                         ),
+                                    tiebreakerGuess:
+                                        state.tiebreakerGuesses[game.id],
+                                    onTiebreakerGuessChanged: (guess) =>
+                                        context.read<EnterPicksBloc>().add(
+                                          EnterPicksEvent.tiebreakerGuessChanged(
+                                            gameId: game.id,
+                                            guess: guess,
+                                          ),
+                                        ),
                                   );
                                 }, childCount: games.length),
                               ),

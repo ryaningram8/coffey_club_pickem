@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/game_model.dart';
+import 'tiebreaker_badge.dart';
 
 /// A single game in the pick sheet — teams, time, spread/O-U, and
 /// tap-to-pick team buttons with a highlighted selected state.
@@ -9,11 +10,17 @@ class PickGameCard extends StatelessWidget {
     required this.game,
     required this.selectedTeamId,
     required this.onTeamSelected,
+    this.tiebreakerGuess,
+    this.onTiebreakerGuessChanged,
   });
 
   final GameModel game;
   final String? selectedTeamId;
   final ValueChanged<String> onTeamSelected;
+
+  /// Only meaningful (and only rendered) when `game.isTiebreaker` is true.
+  final int? tiebreakerGuess;
+  final ValueChanged<int?>? onTiebreakerGuessChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -26,11 +33,21 @@ class PickGameCard extends StatelessWidget {
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      shape: game.isTiebreaker
+          ? RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+              side: BorderSide(color: theme.colorScheme.tertiary, width: 1.5),
+            )
+          : null,
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            if (game.isTiebreaker) ...[
+              const TiebreakerBadge(),
+              const SizedBox(height: 6),
+            ],
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -98,6 +115,13 @@ class PickGameCard extends StatelessWidget {
                 ),
               ],
             ),
+            if (game.isTiebreaker) ...[
+              const SizedBox(height: 8),
+              _TiebreakerGuessField(
+                value: tiebreakerGuess,
+                onChanged: onTiebreakerGuessChanged ?? (_) {},
+              ),
+            ],
           ],
         ),
       ),
@@ -107,6 +131,56 @@ class PickGameCard extends StatelessWidget {
   static String _weekday(int weekday) {
     const names = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
     return names[weekday - 1];
+  }
+}
+
+/// Numeric input for a tiebreaker's combined-final-score guess. Owns its own
+/// [TextEditingController] rather than rebuilding from [value] on every
+/// keystroke (which would fight the user's typing/cursor position) — it
+/// only re-syncs the displayed text when [value] changes for a reason other
+/// than this field's own [onChanged] echoing back, e.g. switching players
+/// in the commissioner's "Enter Picks for Player" flow.
+class _TiebreakerGuessField extends StatefulWidget {
+  const _TiebreakerGuessField({required this.value, required this.onChanged});
+
+  final int? value;
+  final ValueChanged<int?> onChanged;
+
+  @override
+  State<_TiebreakerGuessField> createState() => _TiebreakerGuessFieldState();
+}
+
+class _TiebreakerGuessFieldState extends State<_TiebreakerGuessField> {
+  late final TextEditingController _controller = TextEditingController(
+    text: widget.value?.toString() ?? '',
+  );
+
+  @override
+  void didUpdateWidget(covariant _TiebreakerGuessField oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.value != int.tryParse(_controller.text)) {
+      _controller.text = widget.value?.toString() ?? '';
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return TextField(
+      controller: _controller,
+      keyboardType: TextInputType.number,
+      decoration: const InputDecoration(
+        labelText: 'Your guess: combined final score',
+        isDense: true,
+        border: OutlineInputBorder(),
+      ),
+      onChanged: (text) => widget.onChanged(int.tryParse(text)),
+    );
   }
 }
 

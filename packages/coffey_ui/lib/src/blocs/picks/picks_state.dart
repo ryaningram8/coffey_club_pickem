@@ -10,6 +10,9 @@ class PicksState with _$PicksState {
 
     /// gameId -> pickedTeamId
     required Map<String, String> selections,
+
+    /// gameId -> guess, for tiebreaker games only
+    @Default({}) Map<String, int> tiebreakerGuesses,
     @Default(false) bool isSubmitting,
     @Default(false) bool justSubmitted,
     String? errorMessage,

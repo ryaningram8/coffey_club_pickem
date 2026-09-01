@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/game_model.dart';
 import 'pick_correctness_icon.dart';
+import 'tiebreaker_badge.dart';
 
 /// A single game on the live results screen — live score, status, and the
 /// current user's pick correctness overlay (from PickGameCard, which is
@@ -22,11 +23,21 @@ class LiveGameCard extends StatelessWidget {
     final theme = Theme.of(context);
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      shape: game.isTiebreaker
+          ? RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+              side: BorderSide(color: theme.colorScheme.tertiary, width: 1.5),
+            )
+          : null,
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            if (game.isTiebreaker) ...[
+              const TiebreakerBadge(),
+              const SizedBox(height: 6),
+            ],
             Row(
               children: [
                 if (game.status == 'scheduled')

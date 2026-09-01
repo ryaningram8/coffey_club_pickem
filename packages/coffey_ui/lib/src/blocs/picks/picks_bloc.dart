@@ -20,6 +20,7 @@ class PicksBloc extends Bloc<PicksEvent, PicksState> {
        super(const PicksState.initial()) {
     on<PicksStarted>(_onStarted);
     on<PicksTeamSelected>(_onTeamSelected);
+    on<PicksTiebreakerGuessChanged>(_onTiebreakerGuessChanged);
     on<PicksSubmitRequested>(_onSubmitRequested);
   }
 
@@ -35,7 +36,17 @@ class PicksBloc extends Bloc<PicksEvent, PicksState> {
       final selections = {
         for (final p in existingPicks) p.gameId: p.pickedTeamId,
       };
-      emit(PicksState.loaded(week: week, selections: selections));
+      final tiebreakerGuesses = {
+        for (final p in existingPicks)
+          if (p.tiebreakerGuess != null) p.gameId: p.tiebreakerGuess!,
+      };
+      emit(
+        PicksState.loaded(
+          week: week,
+          selections: selections,
+          tiebreakerGuesses: tiebreakerGuesses,
+        ),
+      );
     } catch (e) {
       emit(PicksState.failure(e.toString()));
     }
@@ -49,6 +60,21 @@ class PicksBloc extends Bloc<PicksEvent, PicksState> {
     emit(current.copyWith(selections: updated, justSubmitted: false));
   }
 
+  void _onTiebreakerGuessChanged(
+    PicksTiebreakerGuessChanged event,
+    Emitter<PicksState> emit,
+  ) {
+    final current = state;
+    if (current is! PicksLoaded) return;
+    final updated = Map<String, int>.from(current.tiebreakerGuesses);
+    if (event.guess == null) {
+      updated.remove(event.gameId);
+    } else {
+      updated[event.gameId] = event.guess!;
+    }
+    emit(current.copyWith(tiebreakerGuesses: updated, justSubmitted: false));
+  }
+
   Future<void> _onSubmitRequested(
     PicksSubmitRequested event,
     Emitter<PicksState> emit,
@@ -58,7 +84,13 @@ class PicksBloc extends Bloc<PicksEvent, PicksState> {
     emit(current.copyWith(isSubmitting: true, errorMessage: null));
     try {
       final picks = current.selections.entries
-          .map((e) => PickModel(gameId: e.key, pickedTeamId: e.value))
+          .map(
+            (e) => PickModel(
+              gameId: e.key,
+              pickedTeamId: e.value,
+              tiebreakerGuess: current.tiebreakerGuesses[e.key],
+            ),
+          )
           .toList();
       await _pickRepository.submitPicks(_weekId, picks);
       emit(current.copyWith(isSubmitting: false, justSubmitted: true));

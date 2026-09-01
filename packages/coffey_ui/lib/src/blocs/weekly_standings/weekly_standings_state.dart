@@ -9,6 +9,7 @@ class WeeklyStandingsState with _$WeeklyStandingsState {
     required WeekModel week,
     required List<WeekStandingModel> standings,
     required List<PickSummaryEntryModel> picksSummary,
+    required WeekTiebreakerModel tiebreaker,
     String? expandedUserId,
   }) = WeeklyStandingsLoaded;
 

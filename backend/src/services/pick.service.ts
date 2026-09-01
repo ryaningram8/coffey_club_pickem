@@ -4,11 +4,32 @@ import { ForbiddenError, NotFoundError, ValidationError } from '../lib/errors';
 export interface PickDto {
   gameId: string;
   pickedTeamId: string;
+  tiebreakerGuess?: number | null;
 }
 
 export async function getUserPicks(weekId: string, userId: string): Promise<PickDto[]> {
   const picks = await prisma.pick.findMany({ where: { weekId, userId } });
-  return picks.map((p) => ({ gameId: p.gameId, pickedTeamId: p.pickedTeamId }));
+  return picks.map((p) => ({
+    gameId: p.gameId,
+    pickedTeamId: p.pickedTeamId,
+    tiebreakerGuess: p.tiebreakerGuess,
+  }));
+}
+
+/**
+ * Validates that every tiebreaker game in the week has a corresponding pick
+ * carrying a non-negative integer guess. Shared by both submission paths so
+ * the requirement can't be bypassed via the commissioner catch-up route.
+ */
+function assertTiebreakerGuesses(games: { id: string; isTiebreaker: boolean }[], picks: PickDto[]) {
+  const picksByGameId = new Map(picks.map((p) => [p.gameId, p]));
+  for (const game of games) {
+    if (!game.isTiebreaker) continue;
+    const guess = picksByGameId.get(game.id)?.tiebreakerGuess;
+    if (typeof guess !== 'number' || !Number.isInteger(guess) || guess < 0) {
+      throw new ValidationError(`A combined-score guess is required for tiebreaker game ${game.id}`);
+    }
+  }
 }
 
 /**
@@ -48,15 +69,18 @@ export async function submitPicks(
       throw new ValidationError(`Invalid team selection for game ${pick.gameId}`);
     }
   }
+  assertTiebreakerGuesses(week.games, picks);
 
   await prisma.$transaction(
-    picks.map((pick) =>
-      prisma.pick.upsert({
+    picks.map((pick) => {
+      const game = gamesById.get(pick.gameId)!;
+      const tiebreakerGuess = game.isTiebreaker ? (pick.tiebreakerGuess ?? null) : null;
+      return prisma.pick.upsert({
         where: { userId_gameId: { userId, gameId: pick.gameId } },
-        update: { pickedTeamId: pick.pickedTeamId },
-        create: { userId, gameId: pick.gameId, weekId, pickedTeamId: pick.pickedTeamId },
-      }),
-    ),
+        update: { pickedTeamId: pick.pickedTeamId, tiebreakerGuess },
+        create: { userId, gameId: pick.gameId, weekId, pickedTeamId: pick.pickedTeamId, tiebreakerGuess },
+      });
+    }),
   );
 
   return getUserPicks(weekId, userId);
@@ -96,15 +120,26 @@ export async function submitPicksForPlayer(
       throw new ValidationError(`Invalid team selection for game ${pick.gameId}`);
     }
   }
+  // Unlike submitPicks, a guess is not required here — the paper pick sheet
+  // this route transcribes from has no tiebreaker section, so the
+  // commissioner may have nothing to enter for it.
 
   await prisma.$transaction(
-    picks.map((pick) =>
-      prisma.pick.upsert({
+    picks.map((pick) => {
+      const game = gamesById.get(pick.gameId)!;
+      const tiebreakerGuess = game.isTiebreaker ? (pick.tiebreakerGuess ?? null) : null;
+      return prisma.pick.upsert({
         where: { userId_gameId: { userId: targetUserId, gameId: pick.gameId } },
-        update: { pickedTeamId: pick.pickedTeamId },
-        create: { userId: targetUserId, gameId: pick.gameId, weekId, pickedTeamId: pick.pickedTeamId },
-      }),
-    ),
+        update: { pickedTeamId: pick.pickedTeamId, tiebreakerGuess },
+        create: {
+          userId: targetUserId,
+          gameId: pick.gameId,
+          weekId,
+          pickedTeamId: pick.pickedTeamId,
+          tiebreakerGuess,
+        },
+      });
+    }),
   );
 
   return getUserPicks(weekId, targetUserId);

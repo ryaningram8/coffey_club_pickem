@@ -8,6 +8,7 @@ class LiveResultsState with _$LiveResultsState {
   const factory LiveResultsState.loaded({
     required WeekModel week,
     required List<PickSummaryEntryModel> picksSummary,
+    required WeekTiebreakerModel tiebreaker,
     required DateTime lastUpdated,
   }) = LiveResultsLoaded;
 

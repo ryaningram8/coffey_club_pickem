@@ -8,6 +8,7 @@ abstract class PickModel with _$PickModel {
   const factory PickModel({
     required String gameId,
     required String pickedTeamId,
+    int? tiebreakerGuess,
   }) = _PickModel;
 
   factory PickModel.fromJson(Map<String, dynamic> json) => _$PickModelFromJson(json);

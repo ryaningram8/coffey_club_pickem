@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import '../../models/pick_summary_model.dart';
 import '../../models/week_model.dart';
+import '../../models/week_tiebreaker_model.dart';
 import '../../repositories/standings_repository.dart';
 import '../../repositories/week_repository.dart';
 
@@ -60,10 +61,14 @@ class LiveResultsBloc extends Bloc<LiveResultsEvent, LiveResultsState> {
     try {
       final week = await _weekRepository.getWeek(_weekId);
       final picksSummary = await _standingsRepository.getPicksSummary(_weekId);
+      final tiebreaker = await _standingsRepository.getWeekTiebreaker(
+        _weekId,
+      );
       emit(
         LiveResultsState.loaded(
           week: week,
           picksSummary: picksSummary,
+          tiebreaker: tiebreaker,
           lastUpdated: DateTime.now(),
         ),
       );

@@ -1,6 +1,7 @@
 import '../models/pick_summary_model.dart';
 import '../models/season_standing_model.dart';
 import '../models/week_standing_model.dart';
+import '../models/week_tiebreaker_model.dart';
 import '../services/api/standings_api.dart';
 import '../services/api_client.dart';
 import 'api_error_mapper.dart';
@@ -22,4 +23,8 @@ class StandingsRepository with ApiErrorMapper {
 
   Future<List<SeasonStandingModel>> getSeasonStandings(String seasonId) =>
       guard(() => _api.getSeasonStandings(seasonId));
+
+  /// Empty games list when the week has no tiebreaker games designated.
+  Future<WeekTiebreakerModel> getWeekTiebreaker(String weekId) =>
+      guard(() => _api.getWeekTiebreaker(weekId));
 }

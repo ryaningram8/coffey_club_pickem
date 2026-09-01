@@ -3,6 +3,7 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import '../../models/pick_summary_model.dart';
 import '../../models/week_model.dart';
 import '../../models/week_standing_model.dart';
+import '../../models/week_tiebreaker_model.dart';
 import '../../repositories/standings_repository.dart';
 import '../../repositories/week_repository.dart';
 
@@ -37,11 +38,15 @@ class WeeklyStandingsBloc
       final week = await _weekRepository.getWeek(_weekId);
       final standings = await _standingsRepository.getWeekStandings(_weekId);
       final picksSummary = await _standingsRepository.getPicksSummary(_weekId);
+      final tiebreaker = await _standingsRepository.getWeekTiebreaker(
+        _weekId,
+      );
       emit(
         WeeklyStandingsState.loaded(
           week: week,
           standings: standings,
           picksSummary: picksSummary,
+          tiebreaker: tiebreaker,
         ),
       );
     } catch (e) {

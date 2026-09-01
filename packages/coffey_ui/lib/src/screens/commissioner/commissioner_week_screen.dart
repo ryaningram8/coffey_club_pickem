@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import '../../models/game_model.dart';
 import '../../models/week_model.dart';
+import '../../repositories/game_repository.dart';
 import '../../repositories/week_repository.dart';
 import '../../services/pick_sheet_download.dart';
 import '../../widgets/error_state_view.dart';
@@ -271,6 +273,15 @@ class _CommissionerWeekScreenState extends State<CommissionerWeekScreen> {
                 else
                   ...week.games.map(
                     (game) => Card(
+                      shape: game.isTiebreaker
+                          ? RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              side: BorderSide(
+                                color: Theme.of(context).colorScheme.tertiary,
+                                width: 1.5,
+                              ),
+                            )
+                          : null,
                       child: ListTile(
                         title: Text(
                           '${game.awayTeam.name} @ ${game.homeTeam.name}',
@@ -283,17 +294,38 @@ class _CommissionerWeekScreenState extends State<CommissionerWeekScreen> {
                             if (game.venueCity != null) game.venueCity!,
                           ].join(' · '),
                         ),
-                        trailing:
-                            (game.spread != null || game.overUnder != null)
-                            ? Text(
-                                [
-                                  if (game.spread != null)
-                                    'Spread ${game.spread}',
-                                  if (game.overUnder != null)
-                                    'O/U ${game.overUnder}',
-                                ].join(' · '),
-                              )
-                            : null,
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (game.spread != null || game.overUnder != null)
+                              Padding(
+                                padding: const EdgeInsets.only(right: 8),
+                                child: Text(
+                                  [
+                                    if (game.spread != null)
+                                      'Spread ${game.spread}',
+                                    if (game.overUnder != null)
+                                      'O/U ${game.overUnder}',
+                                  ].join(' · '),
+                                ),
+                              ),
+                            IconButton(
+                              icon: Icon(
+                                game.isTiebreaker
+                                    ? Icons.star
+                                    : Icons.star_border,
+                              ),
+                              color: game.isTiebreaker
+                                  ? Theme.of(context).colorScheme.tertiary
+                                  : null,
+                              tooltip: game.isTiebreaker
+                                  ? 'Remove as tiebreaker game'
+                                  : 'Set as tiebreaker game',
+                              onPressed: () =>
+                                  _toggleTiebreaker(context, week, game),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
@@ -314,6 +346,40 @@ class _CommissionerWeekScreenState extends State<CommissionerWeekScreen> {
     setState(() {
       _weekFuture = _load();
     });
+  }
+
+  Future<void> _toggleTiebreaker(
+    BuildContext context,
+    WeekModel week,
+    GameModel game,
+  ) async {
+    final gameRepository = context.read<GameRepository>();
+    final messenger = ScaffoldMessenger.of(context);
+
+    final turningOn = !game.isTiebreaker;
+    if (turningOn &&
+        week.games.where((g) => g.isTiebreaker).length >= 2) {
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Only 2 tiebreaker games are allowed per week — remove one first.',
+          ),
+        ),
+      );
+      return;
+    }
+
+    try {
+      await gameRepository.setTiebreaker(game.id, turningOn);
+      if (!mounted) return;
+      setState(() {
+        _weekFuture = _load();
+      });
+    } catch (e) {
+      messenger.showSnackBar(
+        SnackBar(content: Text('Could not update tiebreaker: $e')),
+      );
+    }
   }
 
   Future<void> _editStatus(BuildContext context, WeekModel week) async {
