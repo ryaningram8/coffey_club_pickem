@@ -10,6 +10,35 @@ import { registerJobs } from './jobs/register';
 
 const server = Fastify({ logger: fastifyLoggerOptions });
 
+// Global error handler — must be registered before any plugin/route
+// registration below. Fastify snapshots each child plugin's error-handler
+// chain at the moment it's registered, so a handler set after
+// `registerRoutes` never reaches routes registered earlier; they'd silently
+// fall back to Fastify's own default `{statusCode, error, message}` shape
+// instead of this app's `{ error, code }` convention.
+server.setErrorHandler(
+  (error: FastifyError | Error, request: FastifyRequest, reply: FastifyReply) => {
+    if (error instanceof AppError) {
+      reply.code(error.statusCode).send({ error: error.message, code: error.code });
+      return;
+    }
+    if (error instanceof ZodError) {
+      const message = error.errors
+        .map((e) => `${e.path.join('.')}: ${e.message}`)
+        .join(', ');
+      reply.code(400).send({ error: message, code: 'VALIDATION_ERROR' });
+      return;
+    }
+    // request.log (not the standalone logger) so this error carries the same
+    // reqId as the request's own access log line — lets a player-reported
+    // error be grepped straight to its exact request instead of matched by timestamp.
+    request.log.error(error);
+    reply
+      .code(500)
+      .send({ error: 'Internal server error', code: 'INTERNAL_ERROR', reqId: request.id });
+  },
+);
+
 async function start() {
   // Plugins
   const isDev = process.env.NODE_ENV !== 'production';
@@ -66,28 +95,6 @@ async function start() {
 
   // Health check
   server.get('/health', async () => ({ status: 'ok' }));
-
-  // Global error handler
-  server.setErrorHandler(
-    (error: FastifyError | Error, request: FastifyRequest, reply: FastifyReply) => {
-      if (error instanceof AppError) {
-        return reply.code(error.statusCode).send({ error: error.message, code: error.code });
-      }
-      if (error instanceof ZodError) {
-        const message = error.errors
-          .map((e) => `${e.path.join('.')}: ${e.message}`)
-          .join(', ');
-        return reply.code(400).send({ error: message, code: 'VALIDATION_ERROR' });
-      }
-      // request.log (not the standalone logger) so this error carries the same
-      // reqId as the request's own access log line — lets a player-reported
-      // error be grepped straight to its exact request instead of matched by timestamp.
-      request.log.error(error);
-      return reply
-        .code(500)
-        .send({ error: 'Internal server error', code: 'INTERNAL_ERROR', reqId: request.id });
-    },
-  );
 
   // Start
   const port = parseInt(process.env.PORT ?? '4000', 10);
