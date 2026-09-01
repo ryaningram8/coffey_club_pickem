@@ -33,6 +33,7 @@ class EnterPicksBloc extends Bloc<EnterPicksEvent, EnterPicksState> {
     on<EnterPicksPlayerSelected>(_onPlayerSelected);
     on<EnterPicksTeamSelected>(_onTeamSelected);
     on<EnterPicksSubmitRequested>(_onSubmitRequested);
+    on<EnterPicksPlayerCreated>(_onPlayerCreated);
   }
 
   final WeekRepository _weekRepository;
@@ -123,6 +124,38 @@ class EnterPicksBloc extends Bloc<EnterPicksEvent, EnterPicksState> {
       emit(current.copyWith(isSubmitting: false, justSubmitted: true));
     } catch (e) {
       emit(current.copyWith(isSubmitting: false, errorMessage: e.toString()));
+    }
+  }
+
+  Future<void> _onPlayerCreated(
+    EnterPicksPlayerCreated event,
+    Emitter<EnterPicksState> emit,
+  ) async {
+    final current = state;
+    if (current is! EnterPicksLoaded) return;
+    emit(current.copyWith(errorMessage: null));
+    try {
+      final member = await _seasonRepository.createShellMember(
+        current.week.seasonId,
+        name: event.name,
+        email: event.email,
+      );
+      final latest = state;
+      if (latest is! EnterPicksLoaded) return;
+      final roster = [...latest.roster, member]
+        ..sort((a, b) => a.name.compareTo(b.name));
+      emit(
+        latest.copyWith(
+          roster: roster,
+          selectedPlayerId: member.userId,
+          selections: const {},
+        ),
+      );
+    } catch (e) {
+      final latest = state;
+      if (latest is EnterPicksLoaded) {
+        emit(latest.copyWith(errorMessage: e.toString()));
+      }
     }
   }
 }

@@ -213,6 +213,40 @@ browser tool (or a real device) is available.
 
 ---
 
+## Paper Pick Sheet (Commissioner Tool)
+
+Commissioner-only fallback for players who can't use the app at all — see
+[PAPER_PICK_SHEET_FEATURE.md](PAPER_PICK_SHEET_FEATURE.md) for the full design writeup.
+Implemented on `feature/paper-pick-sheet` (commit `f50f97c`); code-reviewed against the
+acceptance criteria but not yet exercised against a running `docker compose` stack, so
+marked `[~]` per this file's own rule (don't mark `[x]` without an end-to-end docker
+compose check) rather than `[x]`.
+
+- [~] `GET /weeks/:id/pick-sheet.pdf` — commissioner-only PDF export of a published week
+  (name/email header, kickoff time + network per game, blank line per team to write the
+  pick) — `pdfkit`-based, no headless-browser dependency; guarded by the same
+  `requirePoolCommissioner` primitive as other commissioner routes
+- [~] `GET`/`PUT /weeks/:id/players/:userId/picks` — commissioner reads/enters a specific
+  player's picks; skips the pick-deadline check on purpose (paper picks are written
+  before the deadline even if typed in late), upserts on `[userId, gameId]` so
+  re-entering/correcting doesn't duplicate or error
+- [~] Season roster endpoint (name/email/role per member) — backs the "Enter Picks for
+  Player" player picker
+- [~] "Download Pick Sheet" action on the commissioner week screen — web + mobile save
+  handling (`pick_sheet_download_web.dart`/`_io.dart`)
+- [~] "Enter Picks for Player" screen — player picker + game list + submit, new
+  `EnterPicksBloc` (multi-event state, per CLAUDE.md's BLoC-vs-Cubit rule)
+- [~] Shell accounts for players with no `User` row at all — `isShellAccount` schema
+  field (migration `20260901023359_add_user_is_shell_account`), "+ Create Player" option
+  in the "Enter Picks for Player" dropdown, `POST /seasons/:id/members/shell`,
+  signup-time merge-in-place (password and Google) when a shell's email matches a real
+  signup — implemented and exercised against the local dev DB, not yet checked in a
+  running `docker compose` stack (see the "Shell accounts" section of the feature doc)
+- [ ] Upload-to-prefill (photo/scan of a filled sheet auto-fills picks for commissioner
+  review) — idea only, not scoped, deferred
+
+---
+
 ## Phase 5 — Future Enhancements (Post-MVP)
 
 - [ ] Side pools / weekly prop bets

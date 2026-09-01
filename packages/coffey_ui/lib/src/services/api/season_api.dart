@@ -31,6 +31,9 @@ abstract class SeasonApi {
   @POST('/seasons')
   Future<SeasonModel> createSeason(@Body() Map<String, dynamic> body);
 
+  @POST('/seasons/{id}/members/shell')
+  Future<RosterMemberModel> createShellMember(@Path('id') String id, @Body() Map<String, dynamic> body);
+
   @POST('/seasons/{id}/weeks')
   Future<WeekSummaryModel> createWeek(@Path('id') String id, @Body() Map<String, dynamic> body);
 }

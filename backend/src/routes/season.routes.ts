@@ -32,6 +32,11 @@ const createWeekBody = z.object({
   pickDeadline: z.string().datetime(),
 });
 
+const createShellMemberBody = z.object({
+  name: z.string().min(1).max(100),
+  email: z.string().email(),
+});
+
 export async function seasonRoutes(server: FastifyInstance) {
   server.get('/', { preHandler: requireAdmin() }, async () => {
     return seasonService.listSeasons();
@@ -61,6 +66,17 @@ export async function seasonRoutes(server: FastifyInstance) {
     async (request) => {
       const { id } = idParams.parse(request.params);
       return seasonService.getSeasonMembers(id);
+    },
+  );
+
+  server.post(
+    '/:id/members/shell',
+    { preHandler: requirePoolCommissioner(async (request) => (request.params as { id: string }).id) },
+    async (request, reply) => {
+      const { id } = idParams.parse(request.params);
+      const body = createShellMemberBody.parse(request.body);
+      const member = await seasonService.createShellMember(id, body);
+      return reply.code(201).send(member);
     },
   );
 

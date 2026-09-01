@@ -10,4 +10,8 @@ class EnterPicksEvent with _$EnterPicksEvent {
     required String teamId,
   }) = EnterPicksTeamSelected;
   const factory EnterPicksEvent.submitRequested() = EnterPicksSubmitRequested;
+  const factory EnterPicksEvent.playerCreated({
+    required String name,
+    required String email,
+  }) = EnterPicksPlayerCreated;
 }

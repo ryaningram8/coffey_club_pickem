@@ -1,6 +1,10 @@
 # Feature: Paper Pick Sheet for Offline Players
 
-Status: **Not started — scoped, ready to plan/implement.**
+Status: **Base feature and shell-accounts extension both implemented** (branch
+`feature/paper-pick-sheet`) — PDF export, commissioner pick-entry routes/screen, the season
+roster endpoint, and shell-account creation/claiming are all in the code. Not yet verified
+end-to-end against a running `docker compose` stack (see `spec.md` for what "done" requires)
+— worth a live pass before merging. The **upload-to-prefill** idea below is still not started.
 Origin: conversation with Ryan, 2026-08-27. Bring this file back to Claude Code to resume.
 
 ## Problem
@@ -34,7 +38,11 @@ is explicitly **out of scope** — see Decisions below.
 - **Re-entry method:** manual. The commissioner reads the filled-out paper sheet and
   types the picks into the app themselves, player by player, game by game. No
   OCR/scanning/auto-import of any kind — handwriting recognition was considered and
-  explicitly rejected as not worth the complexity/unreliability.
+  explicitly rejected as not worth the complexity/unreliability. Revisited briefly
+  2026-08-31 (Ryan asked how hard auto-fill-from-upload would be, now that the PDF is
+  our own fixed layout, not arbitrary handwriting): still deferred, not reopening this
+  decision now, but see **Future idea: upload-to-prefill** below for the shape it'd
+  take if picked up later.
 - **PDF format:** a flat, printable sheet (print it, write on it by hand, sheet comes
   back some other way — photo, scan, in person). Not a fillable PDF form. No PDF
   form-field library needed.
@@ -128,7 +136,7 @@ is explicitly **out of scope** — see Decisions below.
 
 ## Shell accounts for players with no account at all
 
-Status: **Not started — scoped, ready to plan/implement.**
+Status: **Implemented, not yet verified live in docker compose.**
 Origin: conversation with Ryan, 2026-08-31.
 
 ### Problem
@@ -241,31 +249,93 @@ commissioner "merge two user accounts" tool would close this gap but is explicit
 
 ## Acceptance criteria (draft)
 
-- [ ] Commissioner can download a PDF of a published week's games, showing kickoff
-      time, network (if available), matchup, and a blank line to write the pick.
-- [ ] Commissioner can select any player in the season and enter/edit their picks for
-      the current week's games, at any time (before or after the pick deadline).
-- [ ] Entering picks this way does not require the target player to have ever logged
-      into the app themselves beyond having an account.
-- [ ] Re-entering/correcting a player's picks via this flow overwrites their previous
-      picks for that game rather than erroring or duplicating.
-- [ ] This capability is not reachable by non-commissioner users.
-- [ ] No changes to `schema.prisma` are required for the base paper-pick-sheet feature
-      (entering picks for someone who already has an account) — confirm this still
-      holds once implementation starts. (The shell-account extension below is the one
-      exception and does require a schema change — see that section.)
+- [x] Commissioner can download a PDF of a published week's games, showing kickoff
+      time, network (if available), matchup, and a blank line to write the pick. —
+      `GET /weeks/:id/pick-sheet.pdf` ([pick-sheet.routes.ts](backend/src/routes/pick-sheet.routes.ts),
+      [pick-sheet.service.ts](backend/src/services/pick-sheet.service.ts), `pdfkit`); "Download
+      Pick Sheet" menu action on `commissioner_week_screen.dart`. Implemented, not yet verified
+      live in docker compose.
+- [x] Commissioner can select any player in the season and enter/edit their picks for
+      the current week's games, at any time (before or after the pick deadline). —
+      `GET`/`PUT /weeks/:id/players/:userId/picks` (`submitPicksForPlayer` in
+      [pick.service.ts](backend/src/services/pick.service.ts), no deadline check), new
+      `EnterPicksScreen`/`EnterPicksBloc`, season roster endpoint backs the player picker.
+      Implemented, not yet verified live in docker compose.
+- [x] Entering picks this way does not require the target player to have ever logged
+      into the app themselves beyond having an account. — no login-history check anywhere
+      in `submitPicksForPlayer`, only `SeasonMembership`.
+- [x] Re-entering/correcting a player's picks via this flow overwrites their previous
+      picks for that game rather than erroring or duplicating. — upserts on
+      `[userId, gameId]`.
+- [x] This capability is not reachable by non-commissioner users. — both routes gated by
+      `requirePoolCommissioner`, same primitive used elsewhere.
+- [x] No changes to `schema.prisma` are required for the base paper-pick-sheet feature
+      (entering picks for someone who already has an account) — confirmed: the only
+      migration in this branch (`20260831201934_add_game_network`) is the unrelated
+      network-column addition, not anything pick-sheet-specific. (The shell-account
+      extension below is the one exception and does require a schema change — see that
+      section.)
 
 ### Shell accounts (extension)
 
-- [ ] Commissioner can create a shell account (name + email, no password) for a player
+- [x] Commissioner can create a shell account (name + email, no password) for a player
       with no existing `User` row, enrolled in the current season via
-      `SeasonMembership`.
-- [ ] A shell account's picks, entered via the commissioner pick-entry route, appear
-      correctly in live results and season standings like any other player's.
-- [ ] When a player with a matching-email shell account signs up for real (password or
+      `SeasonMembership`. — "+ Create Player" option in the player dropdown on
+      `enter_picks_screen.dart`, opens a name/email dialog; `POST /seasons/:id/members/shell`
+      → `createShellMember` in [season.service.ts](backend/src/services/season.service.ts),
+      gated by `requirePoolCommissioner`. `User.isShellAccount` added via migration
+      `20260901023359_add_user_is_shell_account`.
+- [x] A shell account's picks, entered via the commissioner pick-entry route, appear
+      correctly in live results and season standings like any other player's. — unchanged
+      `submitPicksForPlayer` path, keyed only on `userId`/`SeasonMembership`; no
+      special-casing needed since a shell row is a normal `User` row.
+- [x] When a player with a matching-email shell account signs up for real (password or
       Google), their existing shell `User` row is updated in place — not duplicated —
-      and `isShellAccount` flips to `false`.
-- [ ] All picks/results/standings entered against the shell account remain attached
-      after the real account claims it (same `User.id` throughout).
-- [ ] Signing up with an email that does not match any shell account behaves exactly
-      as it does today (unaffected by this feature).
+      and `isShellAccount` flips to `false`. — `signup()` and the Google email-merge branch
+      in [auth.service.ts](backend/src/services/auth.service.ts) both branch on
+      `isShellAccount` and update the existing row instead of creating/rejecting.
+- [x] All picks/results/standings entered against the shell account remain attached
+      after the real account claims it (same `User.id` throughout). — verified: claiming
+      updates the row in place by `id`, never deletes/recreates it.
+- [x] Signing up with an email that does not match any shell account behaves exactly
+      as it does today (unaffected by this feature). — the `isShellAccount` branch only
+      triggers when `existing` is found; the no-match path is untouched.
+
+Verified against the local dev DB (seed data) with a script exercising
+`createShellMember` → conflict-on-duplicate-email → `signup()` claim → login, confirming
+the user id, `SeasonMembership` count, and `isShellAccount` flips all behave as designed.
+Not yet clicked through in a browser (`flutter analyze` is clean; the local Flutter web
+dev server was occupied by another session at implementation time).
+
+## Future idea: upload-to-prefill (not started, deferred)
+
+Status: **Idea only — not scoped, not started.** Origin: conversation with Ryan,
+2026-08-31.
+
+The commissioner uploads a photo/scan of a filled-out paper sheet and the app
+pre-fills the "Enter Picks for Player" screen for the commissioner to review and
+confirm, instead of typing every pick by hand. This is **not** the same thing the
+original "no OCR" decision above rejected — that was about reading arbitrary
+handwriting (names, free text). This is narrower: detecting which of two known
+blanks got marked, on a layout the app itself generates and controls. Still a real
+feature, not a quick add:
+
+- **Two possible approaches**, not yet decided between:
+  - Classic image pipeline: align the photo to the known PDF layout, crop each
+    blank's region, detect ink presence. Cheap to run, but alignment robustness
+    against a rotated/skewed/unevenly-lit phone photo (vs. a flatbed scan) is the
+    hard part.
+  - Vision-capable LLM: send the image + the week's game list, ask which team is
+    marked per game. Much less pipeline engineering, more robust to skew/lighting,
+    but has a per-call cost and isn't fully deterministic.
+- **Can't identify *whose* sheet it is from the image alone** — reading the
+  handwritten name/email back is the same "arbitrary handwriting" problem that was
+  already rejected. The commissioner would still pick the player first (the
+  existing "Enter Picks for Player" flow already does this); upload would only
+  prefill picks for that already-selected player.
+- **Any automatic read must be a suggestion the commissioner confirms before
+  saving — never auto-submitted.** These are real-money leagues; a misread pick
+  needs a human in the loop to catch it, not silent trust in the model/CV output.
+
+No further design work has been done on this — revisit if manual entry turns out
+to be a real pain point in practice, not preemptively.

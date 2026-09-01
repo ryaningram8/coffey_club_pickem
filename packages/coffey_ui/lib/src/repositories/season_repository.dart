@@ -38,6 +38,19 @@ class SeasonRepository with ApiErrorMapper {
   Future<List<RosterMemberModel>> getMembers(String seasonId) =>
       guard(() => _api.getMembers(seasonId));
 
+  /// Creates a shell account (name + email, no login yet) for a player with
+  /// no `User` row at all, enrolled in [seasonId] — the "Create Player"
+  /// option in the commissioner "enter picks for player" player picker.
+  Future<RosterMemberModel> createShellMember(
+    String seasonId, {
+    required String name,
+    required String email,
+  }) {
+    return guard(
+      () => _api.createShellMember(seasonId, {'name': name, 'email': email}),
+    );
+  }
+
   Future<SeasonModel> createSeason({
     required String name,
     required int year,

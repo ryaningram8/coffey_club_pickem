@@ -32,8 +32,67 @@ class EnterPicksScreen extends StatelessWidget {
   }
 }
 
-class _EnterPicksView extends StatelessWidget {
+class _EnterPicksView extends StatefulWidget {
   const _EnterPicksView();
+
+  @override
+  State<_EnterPicksView> createState() => _EnterPicksViewState();
+}
+
+class _EnterPicksViewState extends State<_EnterPicksView> {
+  static const _createPlayerValue = '__create_player__';
+
+  // Selecting "Create Player" isn't a real player selection, so it must
+  // never reach the bloc as one — reset() reverts the dropdown's own
+  // display back to the bloc's selectedPlayerId before opening the dialog.
+  final _dropdownKey = GlobalKey<FormFieldState<String>>();
+
+  void _showCreatePlayerDialog(BuildContext context, String seasonId) {
+    final bloc = context.read<EnterPicksBloc>();
+    final nameController = TextEditingController();
+    final emailController = TextEditingController();
+
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Create Player'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameController,
+                autofocus: true,
+                decoration: const InputDecoration(labelText: 'Name'),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: emailController,
+                keyboardType: TextInputType.emailAddress,
+                decoration: const InputDecoration(labelText: 'Email'),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () {
+                final name = nameController.text.trim();
+                final email = emailController.text.trim();
+                if (name.isEmpty || email.isEmpty) return;
+                bloc.add(EnterPicksEvent.playerCreated(name: name, email: email));
+                Navigator.of(dialogContext).pop();
+              },
+              child: const Text('Create'),
+            ),
+          ],
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -79,6 +138,7 @@ class _EnterPicksView extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
                   child: DropdownButtonFormField<String>(
+                    key: _dropdownKey,
                     initialValue: state.selectedPlayerId,
                     decoration: const InputDecoration(
                       labelText: 'Player',
@@ -90,11 +150,20 @@ class _EnterPicksView extends StatelessWidget {
                           value: member.userId,
                           child: Text('${member.name} (${member.email})'),
                         ),
+                      const DropdownMenuItem(
+                        value: _createPlayerValue,
+                        child: Text('+ Create Player'),
+                      ),
                     ],
-                    onChanged: (userId) {
-                      if (userId == null) return;
+                    onChanged: (value) {
+                      if (value == null) return;
+                      if (value == _createPlayerValue) {
+                        _dropdownKey.currentState?.reset();
+                        _showCreatePlayerDialog(context, state.week.seasonId);
+                        return;
+                      }
                       context.read<EnterPicksBloc>().add(
-                        EnterPicksEvent.playerSelected(userId),
+                        EnterPicksEvent.playerSelected(value),
                       );
                     },
                   ),

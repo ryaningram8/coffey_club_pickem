@@ -77,7 +77,9 @@ export async function signup(input: {
   const invitation = await validateInviteCode(input.inviteCode);
 
   const existing = await prisma.user.findUnique({ where: { email: input.email } });
-  if (existing) throw new ConflictError('An account with this email already exists');
+  if (existing && !existing.isShellAccount) {
+    throw new ConflictError('An account with this email already exists');
+  }
 
   const passwordHash = await bcrypt.hash(input.password, BCRYPT_ROUNDS);
 
@@ -89,16 +91,36 @@ export async function signup(input: {
     if (invitation.maxUses !== null && currentUses >= invitation.maxUses) {
       throw new ValidationError('Invite code has already been used');
     }
-    const newUser = await tx.user.create({
-      data: { email: input.email, name: input.name, passwordHash },
-    });
+
+    // Claiming a commissioner-created shell account: update the existing row
+    // in place (same id) so Picks/WeeklyResults/SeasonStandings entered
+    // against it while unclaimed stay attached, rather than creating a
+    // second, empty account for the same person.
+    const newUser = existing
+      ? await tx.user.update({
+          where: { id: existing.id },
+          data: { name: input.name, passwordHash, isShellAccount: false },
+        })
+      : await tx.user.create({
+          data: { email: input.email, name: input.name, passwordHash },
+        });
     await tx.invitationRedemption.create({
       data: { invitationId: invitation.id, userId: newUser.id },
     });
     if (invitation.seasonId) {
-      await tx.seasonMembership.create({
-        data: { userId: newUser.id, seasonId: invitation.seasonId },
-      });
+      // The shell account may already be a member of this season (it's the
+      // common case — the commissioner created it there to enter picks) —
+      // skip the insert then, since [userId, seasonId] is unique.
+      const alreadyMember = existing
+        ? await tx.seasonMembership.findUnique({
+            where: { userId_seasonId: { userId: newUser.id, seasonId: invitation.seasonId } },
+          })
+        : null;
+      if (!alreadyMember) {
+        await tx.seasonMembership.create({
+          data: { userId: newUser.id, seasonId: invitation.seasonId },
+        });
+      }
     }
     return newUser;
   });
@@ -151,7 +173,12 @@ export async function googleAuth(input: {
     if (emailUser) {
       user = await prisma.user.update({
         where: { id: emailUser.id },
-        data: { googleId },
+        // Claiming a shell account: replace the commissioner-entered
+        // placeholder name with the real one and flip it to a real account.
+        // A real account's existing name is left untouched.
+        data: emailUser.isShellAccount
+          ? { googleId, name, isShellAccount: false }
+          : { googleId },
       });
     } else if (input.inviteCode) {
       // New user with an invite code already in hand (e.g. a deep-linked

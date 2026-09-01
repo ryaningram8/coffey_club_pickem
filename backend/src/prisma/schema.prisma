@@ -53,6 +53,7 @@ model User {
   passwordHash      String?  // null when using Google OAuth
   googleId          String?  @unique
   isAdmin           Boolean  @default(false) // global, applies to every pool; per-pool standing is SeasonMembership.role
+  isShellAccount    Boolean  @default(false) // commissioner-created placeholder (name+email, no login) for a player with no account yet; claimed in place on real signup
   venmoHandle       String?
   notificationPrefs Json     @default("{}")
   fcmTokens         String[] @default([])

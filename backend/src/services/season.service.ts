@@ -1,6 +1,6 @@
 import type { PoolRole, Season, SeasonStatus } from '@prisma/client';
 import { prisma } from '../lib/prisma';
-import { NotFoundError } from '../lib/errors';
+import { ConflictError, NotFoundError } from '../lib/errors';
 import { toWeekSummaryDto, type WeekSummaryDto } from './week.service';
 
 export interface SeasonDto {
@@ -130,6 +130,36 @@ export async function getSeasonMembers(seasonId: string): Promise<SeasonMemberDt
     email: m.user.email,
     role: m.role,
   }));
+}
+
+/**
+ * Creates a shell account — a `User` row with just a name/email (no
+ * password/Google login) — for a player with no account at all, enrolled in
+ * `seasonId` so they immediately show up in the season roster/standings like
+ * any other player. The commissioner then enters that player's picks against
+ * this user's id via the normal pick-entry route. If the player later signs
+ * up for real with the same email, `auth.service` claims this row in place
+ * instead of creating a duplicate.
+ */
+export async function createShellMember(
+  seasonId: string,
+  input: { name: string; email: string },
+): Promise<SeasonMemberDto> {
+  const season = await prisma.season.findUnique({ where: { id: seasonId } });
+  if (!season) throw new NotFoundError('Season');
+
+  const existing = await prisma.user.findUnique({ where: { email: input.email } });
+  if (existing) throw new ConflictError('An account with this email already exists');
+
+  const member = await prisma.$transaction(async (tx) => {
+    const user = await tx.user.create({
+      data: { name: input.name, email: input.email, isShellAccount: true },
+    });
+    await tx.seasonMembership.create({ data: { userId: user.id, seasonId } });
+    return user;
+  });
+
+  return { userId: member.id, name: member.name, email: member.email, role: 'player' };
 }
 
 export async function listWeeks(seasonId: string): Promise<WeekSummaryDto[]> {
