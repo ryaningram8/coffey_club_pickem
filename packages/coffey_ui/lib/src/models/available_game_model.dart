@@ -33,6 +33,7 @@ abstract class AvailableGameModel with _$AvailableGameModel {
     String? venueName,
     String? venueCity,
     String? venueCountry,
+    String? network,
   }) = _AvailableGameModel;
 
   factory AvailableGameModel.fromJson(Map<String, dynamic> json) =>

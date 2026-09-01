@@ -82,6 +82,7 @@ class WeekRepository with ApiErrorMapper {
             'venueName': ?g.venueName,
             'venueCity': ?g.venueCity,
             'venueCountry': ?g.venueCountry,
+            'network': ?g.network,
           },
         )
         .toList();

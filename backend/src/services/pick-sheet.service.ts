@@ -91,6 +91,7 @@ export async function generatePickSheetPdf(weekId: string): Promise<Buffer> {
       weekday: 'short',
       hour: 'numeric',
       minute: '2-digit',
+      timeZone: 'America/Chicago',
     });
     const subtitle = game.network ? `${kickoff} · ${game.network}` : kickoff;
 
